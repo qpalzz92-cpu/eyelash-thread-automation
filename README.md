@@ -21,7 +21,8 @@ docs/
 content/
   profile.md            ← 스레드 프로필·바이오 세팅 가이드 (복붙용 문구 포함)
   hooks-library.md      ← 후킹(첫 줄) 모음. 새 글 쓸 때 골라 변형
-  posts.md              ← 바로 올릴 수 있는 스레드 게시물 12편 (본문+댓글)
+  posts.md              ← 바로 올릴 수 있는 스레드 게시물 (00 고정글 + 12편, 본문+댓글)
+  series-record.md      ← 자서전 "기록 시리즈" 연재 EP.1~EP.8
   request-template.md   ← "이런 글 만들어줘" 요청 양식 (일관성 유지용)
 ```
 
