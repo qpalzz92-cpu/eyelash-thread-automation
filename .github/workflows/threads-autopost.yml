@@ -1,0 +1,59 @@
+name: Threads Auto-Post
+
+# 스레드 자동 발행 워크플로.
+# - 스케줄대로 실행되어, queue.yaml 에서 승인·예정된 글 1개를 발행합니다.
+# - 발행할 글이 없으면 아무 것도 하지 않고 끝납니다(안전).
+# - 발행 이력(state.json)은 자동으로 커밋됩니다.
+
+on:
+  schedule:
+    - cron: "0 12 * * *"    # 매일 21:00 KST (12:00 UTC) — 1순위 발행 시간
+    - cron: "30 3 * * *"    # 매일 12:30 KST (03:30 UTC) — 2순위(점심)
+  workflow_dispatch:         # 수동 실행 버튼 (Actions 탭에서)
+    inputs:
+      dry_run:
+        description: "테스트 실행 (실제 발행하지 않고 미리보기만)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write            # state.json 커밋용
+
+concurrency:
+  group: threads-autopost
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 파이썬 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install -r automation/requirements.txt
+
+      - name: 스레드 발행
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MAX_POSTS_PER_RUN: "1"
+        run: python automation/post_to_threads.py
+
+      - name: 발행 이력 저장(commit state.json)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add automation/state.json
+          if git diff --cached --quiet; then
+            echo "변경된 발행 이력이 없습니다."
+          else
+            git commit -m "chore: update autopost state [skip ci]"
+            git push
+          fi

@@ -10,20 +10,29 @@
 
 ## 진행 단계
 
-- **1단계 (완료): 콘텐츠 전략 + 바로 쓸 글** ← 현재
-- **2단계 (예정): 자동화 시스템** — Threads API 연동, 예약 발행, 인사이트 수집
+- **1단계 (완료): 콘텐츠 전략 + 바로 쓸 글**
+- **2단계 (구축 완료): 자동 발행 시스템** — Threads 공식 API + GitHub Actions.
+  초반 ~20개는 검토 후 발행(`approved` 플래그), 이후 완전 자동. 세팅: `docs/automation-setup.md`
 
 ## 폴더 구조
 
 ```
 docs/
   content-playbook.md   ← 콘텐츠 공식 (타깃/페르소나/알고리즘/말투/후킹/구조/댓글유도/발행시간). 모든 제안의 기준
+  automation-setup.md   ← 자동 발행 세팅 가이드 (메타 토큰 발급 → GitHub Secrets)
 content/
   profile.md            ← 스레드 프로필·바이오 세팅 가이드 (복붙용 문구 포함)
   hooks-library.md      ← 후킹(첫 줄) 모음. 새 글 쓸 때 골라 변형
   posts.md              ← 바로 올릴 수 있는 스레드 게시물 (00 고정글 + 12편, 본문+댓글)
   series-record.md      ← 자서전 "기록 시리즈" 연재 EP.1~EP.8
   request-template.md   ← "이런 글 만들어줘" 요청 양식 (일관성 유지용)
+automation/
+  queue.yaml            ← 발행 대기열 (approved:true 인 것만 자동 발행). 검토·승인 지점
+  post_to_threads.py    ← Threads API 발행 스크립트 (본문+첫 댓글)
+  state.json            ← 발행 이력(중복 방지). 자동 갱신
+  requirements.txt      ← 파이썬 의존성
+.github/workflows/
+  threads-autopost.yml  ← 스케줄 자동 실행 (밤 9시 / 점심 12시 반, KST)
 ```
 
 ## 사용법
