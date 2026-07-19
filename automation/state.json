@@ -1,3 +1,8 @@
 {
-  "posted": {}
+  "posted": {
+    "prologue": {
+      "manual": true,
+      "note": "사용자가 직접 손으로 발행함(자동 발행에서 제외)"
+    }
+  }
 }
