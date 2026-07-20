@@ -12,10 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "실행 모드 (setup / push / sync / all)"
+        description: "실행 모드"
         type: choice
         default: sync
-        options: [sync, push, setup, all]
+        options: [sync, push, setup, all, update-stories]
 
 permissions:
   contents: write

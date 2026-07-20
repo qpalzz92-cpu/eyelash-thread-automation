@@ -165,6 +165,62 @@ def push():
     log(f"{n}건 추가 완료. (대기중 후보 {remaining}개 남음)")
 
 
+def query_all(dbid):
+    """DB의 모든 행을 페이지네이션으로 가져온다."""
+    results = []
+    cursor = None
+    while True:
+        payload = {"page_size": 100}
+        if cursor:
+            payload["start_cursor"] = cursor
+        r = requests.post(f"{API}/databases/{dbid}/query", headers=HEADERS, json=payload, timeout=30)
+        if not r.ok:
+            raise RuntimeError(f"조회 실패 {r.status_code}: {r.text}")
+        d = r.json()
+        results.extend(d.get("results", []))
+        if not d.get("has_more"):
+            break
+        cursor = d.get("next_cursor")
+    return results
+
+
+def update_row(page_id, c):
+    props = {
+        "본문": {"rich_text": rt(c.get("body", ""))},
+        "댓글": {"rich_text": rt(c.get("reply", ""))},
+        "추천": {"checkbox": bool(c.get("recommended"))},
+    }
+    r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
+                       json={"properties": props}, timeout=30)
+    if not r.ok:
+        raise RuntimeError(f"행 수정 실패 {r.status_code}: {r.text}")
+
+
+def update_stories():
+    """candidates.yaml 의 스토리텔링 후보를, 노션에서 제목으로 찾아 본문/댓글을 최신으로 교체."""
+    cfg = load_json(CONFIG, {})
+    dbid = cfg.get("database_id")
+    if not dbid:
+        log("게시판(DB) 없음.")
+        return
+    rows = query_all(dbid)
+    by_title = {plain(row["properties"].get("제목")): row["id"] for row in rows}
+    data = yaml.safe_load(open(CANDIDATES, encoding="utf-8")) if CANDIDATES.exists() else {}
+    cands = (data or {}).get("candidates", [])
+    n = 0
+    for c in cands:
+        if c.get("variant") != "스토리텔링":
+            continue
+        pid = by_title.get(c["title"])
+        if not pid:
+            log(f"노션에서 못 찾음(제목 불일치?): {c['title']}")
+            continue
+        update_row(pid, c)
+        n += 1
+        log(f"노션 행 수정: {c['title']}")
+    log(f"스토리 {n}건 노션에서 업데이트 완료")
+
+
 def query_approved(dbid):
     r = requests.post(f"{API}/databases/{dbid}/query", headers=HEADERS,
                       json={"filter": {"property": "상태", "select": {"equals": "승인"}}}, timeout=30)
@@ -262,6 +318,8 @@ def main():
         push()
     elif mode == "sync":
         sync()
+    elif mode == "update-stories":
+        update_stories()
     elif mode == "all":
         setup()
         push()
