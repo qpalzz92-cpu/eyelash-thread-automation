@@ -196,6 +196,41 @@ def update_row(page_id, c):
         raise RuntimeError(f"행 수정 실패 {r.status_code}: {r.text}")
 
 
+def archive_row(page_id):
+    r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
+                       json={"archived": True}, timeout=30)
+    if not r.ok:
+        raise RuntimeError(f"행 보관 실패 {r.status_code}: {r.text}")
+
+
+def rebuild(keep_prefixes=("review",)):
+    """review-* 를 뺀 노션 행을 전부 보관처리하고, candidates.yaml 로 새로 push.
+    (제목이 바뀌어 title 매칭이 안 될 때 깨끗이 재구성)"""
+    cfg = load_json(CONFIG, {})
+    dbid = cfg.get("database_id")
+    if not dbid:
+        log("게시판(DB) 없음.")
+        return
+    data = yaml.safe_load(open(CANDIDATES, encoding="utf-8")) if CANDIDATES.exists() else {}
+    cands = (data or {}).get("candidates", [])
+    keep_titles = {c["title"] for c in cands
+                   if any(c.get("key", "").startswith(p) for p in keep_prefixes)}
+    rows = query_all(dbid)
+    archived = 0
+    for row in rows:
+        if plain(row["properties"].get("제목")) not in keep_titles:
+            archive_row(row["id"])
+            archived += 1
+    log(f"{archived}개 행 보관처리")
+    # notion_pushed 를 keep 대상만 남기고 초기화 → push 가 나머지를 새로 올림
+    state = load_json(STATE, {"posted": {}})
+    keep_keys = [c["key"] for c in cands
+                 if any(c.get("key", "").startswith(p) for p in keep_prefixes)]
+    state["notion_pushed"] = [k for k in state.get("notion_pushed", []) if k in keep_keys]
+    save_json(STATE, state)
+    push()
+
+
 def resync(skip_prefixes=("review",)):
     """candidates.yaml 의 후보를 노션에서 제목으로 찾아 본문/댓글/추천을 최신으로 교체.
     skip_prefixes 로 시작하는 key(예: 사용자가 직접 편집한 review-*)는 건너뜀."""
@@ -322,6 +357,8 @@ def main():
         sync()
     elif mode in ("resync", "update-stories"):
         resync()
+    elif mode == "rebuild":
+        rebuild()
     elif mode == "all":
         setup()
         push()
