@@ -144,7 +144,7 @@ def add_row(dbid, c):
 def push():
     """candidates.yaml 의 아직 안 올린 후보를 하루 최대 PUSH_LIMIT(기본 3)개까지 노션에 추가."""
     cfg = setup()
-    limit = int(os.environ.get("PUSH_LIMIT", "3"))
+    limit = int(os.environ.get("PUSH_LIMIT", "100"))  # 기본: 대기중 후보 전부 한 번에
     data = yaml.safe_load(open(CANDIDATES, encoding="utf-8")) if CANDIDATES.exists() else {}
     cands = (data or {}).get("candidates", [])
     state = load_json(STATE, {"posted": {}})
