@@ -15,7 +15,7 @@ on:
         description: "실행 모드"
         type: choice
         default: sync
-        options: [sync, push, setup, all, resync, rebuild]
+        options: [sync, push, setup, all, resync, rebuild, rebuild-all]
 
 permissions:
   contents: write

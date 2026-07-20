@@ -191,6 +191,8 @@ def update_row(page_id, c):
         "댓글": {"rich_text": rt(c.get("reply", ""))},
         "추천": {"checkbox": bool(c.get("recommended"))},
     }
+    if c.get("variant"):
+        props["유형"] = {"select": {"name": c["variant"]}}
     r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
                        json={"properties": props}, timeout=30)
     if not r.ok:
@@ -384,6 +386,8 @@ def main():
         resync()
     elif mode == "rebuild":
         rebuild()
+    elif mode == "rebuild-all":
+        rebuild(keep_prefixes=())
     elif mode == "all":
         setup()
         push()
