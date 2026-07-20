@@ -196,8 +196,9 @@ def update_row(page_id, c):
         raise RuntimeError(f"행 수정 실패 {r.status_code}: {r.text}")
 
 
-def update_stories():
-    """candidates.yaml 의 스토리텔링 후보를, 노션에서 제목으로 찾아 본문/댓글을 최신으로 교체."""
+def resync(skip_prefixes=("review",)):
+    """candidates.yaml 의 후보를 노션에서 제목으로 찾아 본문/댓글/추천을 최신으로 교체.
+    skip_prefixes 로 시작하는 key(예: 사용자가 직접 편집한 review-*)는 건너뜀."""
     cfg = load_json(CONFIG, {})
     dbid = cfg.get("database_id")
     if not dbid:
@@ -209,7 +210,8 @@ def update_stories():
     cands = (data or {}).get("candidates", [])
     n = 0
     for c in cands:
-        if c.get("variant") != "스토리텔링":
+        key = c.get("key", "")
+        if any(key.startswith(p) for p in skip_prefixes):
             continue
         pid = by_title.get(c["title"])
         if not pid:
@@ -218,7 +220,7 @@ def update_stories():
         update_row(pid, c)
         n += 1
         log(f"노션 행 수정: {c['title']}")
-    log(f"스토리 {n}건 노션에서 업데이트 완료")
+    log(f"{n}건 노션에서 업데이트 완료 (review 제외)")
 
 
 def query_approved(dbid):
@@ -318,8 +320,8 @@ def main():
         push()
     elif mode == "sync":
         sync()
-    elif mode == "update-stories":
-        update_stories()
+    elif mode in ("resync", "update-stories"):
+        resync()
     elif mode == "all":
         setup()
         push()
