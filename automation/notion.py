@@ -141,7 +141,9 @@ def add_row(dbid, c):
 
 
 def push():
+    """candidates.yaml 의 아직 안 올린 후보를 하루 최대 PUSH_LIMIT(기본 3)개까지 노션에 추가."""
     cfg = setup()
+    limit = int(os.environ.get("PUSH_LIMIT", "3"))
     data = yaml.safe_load(open(CANDIDATES, encoding="utf-8")) if CANDIDATES.exists() else {}
     cands = (data or {}).get("candidates", [])
     state = load_json(STATE, {"posted": {}})
@@ -151,12 +153,15 @@ def push():
         key = c.get("key")
         if not key or key in pushed:
             continue
+        if n >= limit:
+            break
         add_row(cfg["database_id"], c)
         pushed.append(key)
         n += 1
         log(f"노션에 추가: {c['title']}")
     save_json(STATE, state)
-    log(f"{n}건 노션 게시판에 추가 완료")
+    remaining = sum(1 for c in cands if c.get("key") and c["key"] not in pushed)
+    log(f"{n}건 추가 완료. (대기중 후보 {remaining}개 남음)")
 
 
 def query_approved(dbid):

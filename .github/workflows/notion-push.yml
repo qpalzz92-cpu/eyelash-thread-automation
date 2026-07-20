@@ -1,0 +1,43 @@
+name: Notion Push (daily candidates)
+
+# 매일 자정(00:00 KST)에 노션 게시판으로 후보 3개를 올림.
+# candidates.yaml 백로그에서 아직 안 올린 것 중 최대 3개(PUSH_LIMIT).
+# 그날 낮~저녁에 사용자가 노션에서 '승인' → 20:30 notion-sync 가 큐로 반영 → 21:00 발행.
+
+on:
+  schedule:
+    - cron: "0 15 * * *"    # 매일 00:00 KST (전날 15:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-push
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r automation/requirements.txt
+      - name: 후보 노션에 올리기
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          PUSH_LIMIT: "3"
+        run: python automation/notion.py push
+      - name: 변경사항 저장(commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add automation/notion_config.json automation/state.json
+          if git diff --cached --quiet; then
+            echo "변경사항 없음."
+          else
+            git commit -m "chore: 노션 후보 push [skip ci]"
+            git push
+          fi
