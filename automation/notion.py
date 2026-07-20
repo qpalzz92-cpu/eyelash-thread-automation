@@ -78,9 +78,10 @@ DB_PROPERTIES = {
         {"name": n} for n in ["마케팅", "브랜딩", "시스템", "공감", "스토리", "반전", "정보", "전환"]
     ]}},
     "유형": {"select": {"options": [
-        {"name": "A", "color": "blue"},
-        {"name": "B", "color": "orange"},
-        {"name": "C", "color": "green"},
+        {"name": "스토리텔링", "color": "purple"},
+        {"name": "데이터", "color": "blue"},
+        {"name": "정보성", "color": "green"},
+        {"name": "반전", "color": "red"},
     ]}},
     "추천": {"checkbox": {}},
     "주제": {"rich_text": {}},
