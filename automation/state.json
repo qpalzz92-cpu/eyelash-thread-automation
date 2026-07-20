@@ -16,6 +16,21 @@
     "review-c",
     "noshow-story",
     "noshow-data",
-    "noshow-info"
+    "noshow-info",
+    "complaint-story",
+    "complaint-data",
+    "complaint-info",
+    "counsel-story",
+    "counsel-data",
+    "counsel-info",
+    "sns-story",
+    "sns-data",
+    "sns-info",
+    "membership-story",
+    "membership-data",
+    "membership-info",
+    "burnout-story",
+    "burnout-data",
+    "burnout-info"
   ]
 }
