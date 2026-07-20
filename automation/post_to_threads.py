@@ -79,6 +79,17 @@ def create_container(user_id, token, text, reply_to_id=None):
     return resp.json()["id"]
 
 
+def resolve_user_id(token):
+    """토큰만으로 내 Threads 사용자 ID를 조회한다 (THREADS_USER_ID 미설정 시)."""
+    resp = requests.get(f"{API}/me", params={"fields": "id,username",
+                                             "access_token": token}, timeout=30)
+    if not resp.ok:
+        raise RuntimeError(f"사용자 ID 조회 실패 {resp.status_code}: {resp.text}")
+    data = resp.json()
+    log(f"연결된 계정: @{data.get('username','?')} (id={data.get('id')})")
+    return data["id"]
+
+
 def publish_container(user_id, token, creation_id):
     payload = {"creation_id": creation_id, "access_token": token}
     resp = requests.post(f"{API}/{user_id}/threads_publish", data=payload, timeout=30)
@@ -118,9 +129,9 @@ def main():
     reply_delay = int(os.getenv("REPLY_DELAY", "5"))
 
     token = os.getenv("THREADS_ACCESS_TOKEN")
-    user_id = os.getenv("THREADS_USER_ID")
-    if not dry_run and (not token or not user_id):
-        log("ERROR: THREADS_ACCESS_TOKEN / THREADS_USER_ID 가 설정되지 않았습니다.")
+    user_id = os.getenv("THREADS_USER_ID")  # 선택: 없으면 토큰으로 자동 조회
+    if not dry_run and not token:
+        log("ERROR: THREADS_ACCESS_TOKEN 이 설정되지 않았습니다.")
         sys.exit(1)
 
     posts = load_queue()
@@ -131,6 +142,10 @@ def main():
     if not due:
         log("발행할 승인·예정 글이 없습니다. (approved=true 이고 예약시간이 지난 글 없음)")
         return
+
+    # 사용자 ID가 지정되지 않았으면 토큰으로 자동 조회
+    if not dry_run and not user_id:
+        user_id = resolve_user_id(token)
 
     published = 0
     for post in due:
