@@ -26,6 +26,7 @@ CONFIG = ROOT / "notion_config.json"
 CANDIDATES = ROOT / "candidates.yaml"
 QUEUE = ROOT / "queue.yaml"
 STATE = ROOT / "state.json"
+LEARNINGS = ROOT / "learnings.jsonl"
 
 TOKEN = os.environ.get("NOTION_TOKEN")
 HEADERS = {
@@ -287,6 +288,19 @@ def block(text):
     return "\n".join("      " + ln if ln else "" for ln in text.rstrip("\n").split("\n"))
 
 
+def record_learning(title, draft_body, draft_reply, final_body, final_reply):
+    """내 초안 vs 사용자가 노션에서 고친 최종본을 learnings.jsonl 에 기록(자동 수집)."""
+    import json as _json
+    entry = {
+        "date": now_utc().isoformat(),
+        "title": title,
+        "draft_body": draft_body, "final_body": final_body,
+        "draft_reply": draft_reply, "final_reply": final_reply,
+    }
+    with open(LEARNINGS, "a", encoding="utf-8") as f:
+        f.write(_json.dumps(entry, ensure_ascii=False) + "\n")
+
+
 def sync():
     cfg = load_json(CONFIG, {})
     dbid = cfg.get("database_id")
@@ -296,6 +310,11 @@ def sync():
     rows = query_approved(dbid)
     state = load_json(STATE, {"posted": {}})
     synced = state.setdefault("notion_synced", [])
+
+    # 내 원본 초안(제목→본문/댓글) 맵 — 사용자 수정과 비교해 학습 수집
+    cdata = yaml.safe_load(open(CANDIDATES, encoding="utf-8")) if CANDIDATES.exists() else {}
+    draft_by_title = {c["title"]: (c.get("body", "").rstrip(), c.get("reply", "").rstrip())
+                      for c in (cdata or {}).get("candidates", [])}
 
     queue_text = open(QUEUE, encoding="utf-8").read()
     queue_data = yaml.safe_load(queue_text) or {}
@@ -334,6 +353,12 @@ def sync():
         new_blocks.append("\n".join(entry))
         synced.append(pid)
         log(f"큐에 추가: {title} ({sched[:10]})")
+
+        # 학습 수집: 내 초안과 사용자 최종본이 다르면 기록
+        draft = draft_by_title.get(title)
+        if draft and (draft[0].strip() != body.strip() or draft[1].strip() != reply.strip()):
+            record_learning(title, draft[0], draft[1], body, reply)
+            log(f"  ✎ 수정 감지 → 학습 기록: {title}")
 
     if new_blocks:
         with open(QUEUE, "a", encoding="utf-8") as f:
