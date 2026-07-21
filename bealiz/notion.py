@@ -53,6 +53,10 @@ def save_json(path, data):
         f.write("\n")
 
 
+def now_utc():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 def rt(content):
     """문자열 → Notion rich_text 배열 (2000자 제한 대비 절단)."""
     if not content:
