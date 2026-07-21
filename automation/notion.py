@@ -206,6 +206,62 @@ def archive_row(page_id):
         raise RuntimeError(f"행 보관 실패 {r.status_code}: {r.text}")
 
 
+def group_key(title):
+    """제목 '이모지 N. ...' 에서 주제 그룹 번호 N 추출. 없으면 제목 전체."""
+    import re
+    m = re.match(r"^\S+\s+(\d+)\.", title or "")
+    return m.group(1) if m else (title or "")
+
+
+def qid_for(pid):
+    """queue id 규칙(sync 와 동일): notion-<page_id 앞 8자>."""
+    return "notion-" + pid.replace("-", "")[:8]
+
+
+def row_status(row):
+    sel = row["properties"].get("상태", {}).get("select")
+    return sel.get("name") if sel else ""
+
+
+def set_status(page_id, name):
+    r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
+                       json={"properties": {"상태": {"select": {"name": name}}}}, timeout=30)
+    if not r.ok:
+        raise RuntimeError(f"상태 변경 실패 {r.status_code}: {r.text}")
+
+
+def cleanup_published():
+    """발행 완료된 글이 있는 주제 그룹에서, 승인 안 된(후보) 형제 행을 자동 보관(삭제).
+    - 발행된 행은 상태를 '발행완료'로 표시.
+    - 같은 그룹이라도 '승인' 상태(아직 안 나간 것)는 남겨둔다."""
+    cfg = load_json(CONFIG, {})
+    dbid = cfg.get("database_id")
+    if not dbid:
+        log("게시판(DB) 없음.")
+        return
+    state = load_json(STATE, {"posted": {}})
+    posted = state.get("posted", {})
+    rows = query_all(dbid)
+
+    published_groups = set()
+    for row in rows:
+        if qid_for(row["id"]) in posted:
+            published_groups.add(group_key(plain(row["properties"].get("제목"))))
+            if row_status(row) != "발행완료":
+                set_status(row["id"], "발행완료")
+                log(f"발행완료 표시: {plain(row['properties'].get('제목'))}")
+
+    archived = 0
+    for row in rows:
+        title = plain(row["properties"].get("제목"))
+        if group_key(title) in published_groups and qid_for(row["id"]) not in posted:
+            if row_status(row) == "후보":
+                archive_row(row["id"])
+                archived += 1
+                log(f"미승인 형제 보관: {title}")
+    log(f"{archived}개 미승인 형제 정리 완료")
+
+
 def rebuild(keep_prefixes=("review",)):
     """review-* 를 뺀 노션 행을 전부 보관처리하고, candidates.yaml 로 새로 push.
     (제목이 바뀌어 title 매칭이 안 될 때 깨끗이 재구성)"""
@@ -397,6 +453,8 @@ def main():
         rebuild()
     elif mode == "rebuild-all":
         rebuild(keep_prefixes=())
+    elif mode == "cleanup":
+        cleanup_published()
     elif mode == "all":
         setup()
         push()

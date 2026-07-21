@@ -37,6 +37,12 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           MAX_POSTS_PER_RUN: "1"
         run: python bealiz/post_to_threads.py
+      - name: 발행 후 정리(같은 주제 미승인 형제 자동 보관)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python bealiz/notion.py cleanup
+
       - name: 발행 이력 저장(commit)
         run: |
           git config user.name "github-actions[bot]"
