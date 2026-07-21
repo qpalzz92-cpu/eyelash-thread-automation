@@ -191,6 +191,8 @@ def update_row(page_id, c):
         "댓글": {"rich_text": rt(c.get("reply", ""))},
         "추천": {"checkbox": bool(c.get("recommended"))},
     }
+    if c.get("variant"):
+        props["유형"] = {"select": {"name": c["variant"]}}
     r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
                        json={"properties": props}, timeout=30)
     if not r.ok:
@@ -267,21 +269,31 @@ def query_approved(dbid):
     return r.json().get("results", [])
 
 
-def next_slot(queue_data):
-    """queue 내 가장 늦은 예약일 다음 날 21:00(KST)."""
-    latest = None
+KST = datetime.timezone(datetime.timedelta(hours=9))
+SLOT_HOURS = [13, 21]  # 하루 발행 슬롯: 오후 1시 · 오후 9시 (KST)
+
+
+def free_slots(queue_data):
+    """이미 큐에 잡힌 시간과 과거 시간은 건너뛰고,
+    하루 2개(13시·21시 KST) 빈 슬롯을 이른 순서대로 무한히 내주는 제너레이터."""
+    used = set()
     for p in queue_data.get("posts", []):
         s = p.get("scheduled_at")
         if not s:
             continue
         try:
-            d = datetime.datetime.fromisoformat(s).date()
+            used.add(datetime.datetime.fromisoformat(s).astimezone(KST))
         except ValueError:
             continue
-        if latest is None or d > latest:
-            latest = d
-    base = latest or datetime.date.today()
-    return base + datetime.timedelta(days=1)
+    now_kst = now_utc().astimezone(KST)
+    day = now_kst.date()
+    while True:
+        for h in SLOT_HOURS:
+            slot = datetime.datetime(day.year, day.month, day.day, h, 0, tzinfo=KST)
+            if slot <= now_kst or slot in used:
+                continue
+            yield slot
+        day = day + datetime.timedelta(days=1)
 
 
 def block(text):
@@ -320,7 +332,7 @@ def sync():
     queue_data = yaml.safe_load(queue_text) or {}
 
     new_blocks = []
-    slot = next_slot(queue_data)
+    slots = free_slots(queue_data)
     for row in rows:
         pid = row["id"]
         if pid in synced:
@@ -337,8 +349,7 @@ def sync():
             start = date_prop["start"]
             sched = start if "T" in start else f"{start}T21:00:00+09:00"
         else:
-            sched = f"{slot.isoformat()}T21:00:00+09:00"
-            slot = slot + datetime.timedelta(days=1)
+            sched = next(slots).isoformat()
         qid = "notion-" + pid.replace("-", "")[:8]
 
         entry = [f"  - id: {qid}",
@@ -384,6 +395,8 @@ def main():
         resync()
     elif mode == "rebuild":
         rebuild()
+    elif mode == "rebuild-all":
+        rebuild(keep_prefixes=())
     elif mode == "all":
         setup()
         push()
