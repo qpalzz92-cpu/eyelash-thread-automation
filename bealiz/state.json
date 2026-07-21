@@ -6,6 +6,15 @@
     "retention-info",
     "start-story",
     "start-real",
-    "start-info"
+    "start-info",
+    "consult-story",
+    "consult-real",
+    "consult-info",
+    "growth-story",
+    "growth-real",
+    "growth-info",
+    "photo-story",
+    "photo-real",
+    "photo-info"
   ]
 }
