@@ -1,0 +1,4 @@
+out/**/*.html
+out/*/*.html
+__pycache__/
+*.pyc
