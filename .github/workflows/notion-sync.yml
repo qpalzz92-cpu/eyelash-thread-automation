@@ -4,11 +4,12 @@ name: Notion Sync
 # - setup: 노션에 게시판(DB) 생성 (최초 1회, 이미 있으면 건너뜀)
 # - push : candidates.yaml 후보를 노션에 추가
 # - sync : 노션에서 '승인'된 글을 queue.yaml 로 옮김 → 자동 발행 대상이 됨
-# 매일 20:30 KST 에 sync 실행(21:00 발행 전에 승인건 반영). 수동 실행도 가능.
+# 매일 12:00 · 20:30 KST 에 sync 실행(오후 1시·9시 발행 전에 승인건 반영). 수동 실행도 가능.
 
 on:
   schedule:
-    - cron: "30 11 * * *"    # 매일 20:30 KST (발행 30분 전 승인건 반영)
+    - cron: "0 3 * * *"     # 매일 12:00 KST (오후 1시 발행 1시간 전 승인건 반영)
+    - cron: "30 11 * * *"    # 매일 20:30 KST (오후 9시 발행 30분 전 승인건 반영)
   workflow_dispatch:
     inputs:
       mode:

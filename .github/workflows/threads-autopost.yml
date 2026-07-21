@@ -7,8 +7,8 @@ name: Threads Auto-Post
 
 on:
   schedule:
-    - cron: "0 12 * * *"    # 매일 21:00 KST (12:00 UTC) — 1순위 발행 시간
-    - cron: "30 3 * * *"    # 매일 12:30 KST (03:30 UTC) — 2순위(점심)
+    - cron: "0 4 * * *"     # 매일 오후 1시 KST (04:00 UTC) — 하루 1번째 발행
+    - cron: "0 12 * * *"    # 매일 오후 9시 KST (12:00 UTC) — 하루 2번째 발행
   workflow_dispatch:         # 수동 실행 버튼 (Actions 탭에서)
     inputs:
       dry_run:
