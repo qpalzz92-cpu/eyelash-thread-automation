@@ -438,6 +438,12 @@ def sync():
             log(f"  ✎ 수정 감지 → 학습 기록: {title}")
 
     if new_blocks:
+        # 빈 큐(posts: [])에 그냥 이어붙이면 YAML이 깨짐 → posts: 로 바꾼 뒤 추가
+        qtext = open(QUEUE, encoding="utf-8").read()
+        if "posts: []" in qtext:
+            qtext = qtext.replace("posts: []", "posts:", 1)
+            with open(QUEUE, "w", encoding="utf-8") as f:
+                f.write(qtext.rstrip("\n") + "\n")
         with open(QUEUE, "a", encoding="utf-8") as f:
             f.write("\n" + "\n\n".join(new_blocks) + "\n")
         save_json(STATE, state)
