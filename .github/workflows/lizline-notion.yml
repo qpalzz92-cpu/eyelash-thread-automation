@@ -1,0 +1,46 @@
+name: Lizline Notion (판매점 전용 노하우)
+
+# lizline-cardnews/detailed/*.md (판매점 전용 상세 노하우)를
+# 노션 DB "리즈라인 판매점 전용 노하우"에 자동 발행한다.
+# - detailed/ 의 글이 push 되면 자동 실행 (자동발행)
+# - Actions 탭에서 수동 실행도 가능
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "lizline-cardnews/detailed/**"
+      - "lizline-cardnews/notion_sales.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lizline-notion-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: 노션에 판매점 전용 노하우 발행
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python lizline-cardnews/notion_sales.py push
+      - name: 설정 저장(commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lizline-cardnews/notion_sales_config.json
+          if git diff --cached --quiet; then
+            echo "변경사항 없음."
+          else
+            git commit -m "chore: lizline notion 발행 반영 [skip ci]"
+            git push
+          fi
