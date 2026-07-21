@@ -5,8 +5,40 @@
 # 본문은 자기완결로 끝내지 말고 핵심 하나는 댓글로 유도. 노션에서 '승인'하면 자동발행 큐로.
 
 candidates:
+  - key: labor-trap
+    title: "⚠️ 1. 잘 벌어도 문 닫는 이유"
+    category: 시스템
+    variant: 반전형+손해형
+    recommended: true
+    topic: "노동 의존 반전(잘 벌어도 문 닫는다). 이미 발행한 '나는 늘 한 발 앞서…' 글 댓글에서 예고한 답편. 6원칙: 훅=반전형+손해형, 흐름=통념→반전→이유→해결→결론, 공유=잘 벌 때 방심한 원장, 댓글=준비 경험 질문."
+    body: |
+      1인샵은 안 돼서 문 닫는 줄 알지?
+
+      아니야.
+      돈 잘 버는데도 문 닫는 샵, 생각보다 많아.
+
+      이유는 하나야.
+      잘 벌 때 '다음'을 준비 안 했거든.
+
+      혼자 다 짊어지고 굴리면
+      버는 만큼 내 시간과 체력이 거기 다 묶여.
+      내가 멈추면 매출도 멈추는 구조라 오래 못 가.
+
+      진짜 위험한 순간은 '잘될 때'야.
+      그때 다음 계단(브랜딩·시스템)을 올려놔야
+      오래, 그리고 편하게 벌 수 있어.
+
+      끝까지 살아남는 원장은
+      잘될 때 이미 다음을 준비한 사람이더라.
+
+      지금 잘되고 있어서 '다음'을 미루는 원장님 있으면
+      이 글 꼭 공유해줘. 그때가 제일 위험하니까.
+    reply: |
+      잘될 때 다음을 준비하는 원장, 진짜 몇 없어.
+      대부분 '바쁘니까 나중에' 하다가 그 타이밍을 놓쳐.
+      너는 지금 '시술 말고' 시스템에 쓰는 시간이 하루에 얼마나 돼? 하나만 얘기해줘.
   - key: review-a
-    title: "📣 1. 신규 손님은 광고보다 '후기' 보고 온다"
+    title: "📣 2. 신규 손님은 광고보다 '후기' 보고 온다"
     category: 마케팅
     variant: 반전형+정보성형
     recommended: false
@@ -35,7 +67,7 @@ candidates:
     sources: "소비자 리뷰 신뢰도 조사(BrightLocal Local Consumer Review Survey 등) · 지역업종 후기 영향 통계"
 
   - key: review-b
-    title: "📣 1. 광고비 쓰는데 왜 신규가 안 늘까?"
+    title: "📣 2. 광고비 쓰는데 왜 신규가 안 늘까?"
     category: 마케팅
     variant: 손해형+반전형
     recommended: false
@@ -62,7 +94,7 @@ candidates:
     sources: "소비자 리뷰 신뢰도 조사(BrightLocal Local Consumer Review Survey 등) · 지역업종 후기 영향 통계"
 
   - key: review-c
-    title: "📣 1. 광고 쓰기 전에 이것부터 - 후기 ⭐"
+    title: "📣 2. 광고 쓰기 전에 이것부터 - 후기 ⭐"
     category: 마케팅
     variant: 반전형+비밀공개형
     recommended: true
@@ -91,7 +123,7 @@ candidates:
     sources: "소비자 리뷰 신뢰도 조사(BrightLocal Local Consumer Review Survey 등) · 지역업종 후기 영향 통계"
 
   - key: noshow-story
-    title: "📅 2. 예약금 세게 걸었더니 노쇼가 아니라 '신규'가 사라졌다"
+    title: "📅 3. 예약금 세게 걸었더니 노쇼가 아니라 '신규'가 사라졌다"
     category: 공감
     variant: 손해형+반전형
     recommended: false
@@ -124,7 +156,7 @@ candidates:
       너는 노쇼 잡으려다 오히려 신규 잃은 적 없어? 있으면 하나만 얘기해줘.
 
   - key: noshow-data
-    title: "📅 2. 노쇼는 '전날'에 몰린다 (다들 여기서 실수해)"
+    title: "📅 3. 노쇼는 '전날'에 몰린다 (다들 여기서 실수해)"
     category: 정보
     variant: 반전형+비밀공개형
     recommended: true
@@ -156,7 +188,7 @@ candidates:
     sources: "현장 운영 경험(노쇼·취소는 전날·당일 집중) · 현대경제연구원 노쇼 손실 추정"
 
   - key: noshow-info
-    title: "📅 2. 노쇼는 3종류다 (하나로 잡으려니 안 잡히지)"
+    title: "📅 3. 노쇼는 3종류다 (하나로 잡으려니 안 잡히지)"
     category: 정보
     variant: 정보성형+반전형
     recommended: false
@@ -190,7 +222,7 @@ candidates:
       유형부터 봐야 대책이 맞아. 하나만 골라서 얘기해주면 맞는 대책 짚어줄게.
 
   - key: complaint-story
-    title: "🛡️ 3. 진상 막으려다 좋은 손님을 잃었다"
+    title: "🛡️ 4. 진상 막으려다 좋은 손님을 잃었다"
     category: 공감
     variant: 실패경험형+반전형
     recommended: true
@@ -222,7 +254,7 @@ candidates:
       너는 '이건 진상이다' 싶은 신호 뭐 있어? 하나만 공유해줘.
 
   - key: complaint-data
-    title: "🛡️ 3. 제일 무서운 건 컴플레인 하는 손님이 아니야"
+    title: "🛡️ 4. 제일 무서운 건 컴플레인 하는 손님이 아니야"
     category: 공감
     variant: 반전형+손해형
     recommended: false
@@ -251,7 +283,7 @@ candidates:
     sources: "부정적 경험의 입소문 파급이 긍정보다 크다는 고객경험 조사(불만 고객 다수는 말없이 이탈)"
 
   - key: complaint-info
-    title: "🛡️ 3. 컴플레인 터졌을 때, 이 순서대로만 하면 돼"
+    title: "🛡️ 4. 컴플레인 터졌을 때, 이 순서대로만 하면 돼"
     category: 공감
     variant: 정보성형
     recommended: false
@@ -286,7 +318,7 @@ candidates:
       기억에 남는 컴플레인 응대 있어? 어떻게 풀었는지 하나만 들려줘.
 
   - key: counsel-story
-    title: "💰 4. '뭐 해드릴까요?' 이 말이 내 매출을 깎고 있었다"
+    title: "💰 5. '뭐 해드릴까요?' 이 말이 내 매출을 깎고 있었다"
     category: 브랜딩
     variant: 실패경험형+반전형
     recommended: false
@@ -319,7 +351,7 @@ candidates:
       너는 상담 첫 마디를 뭐라고 열어? 하나만 알려줘.
 
   - key: counsel-data
-    title: "💰 4. 선택지를 3개 주면, 손님은 중간을 고른다"
+    title: "💰 5. 선택지를 3개 주면, 손님은 중간을 고른다"
     category: 브랜딩
     variant: 반전형+비밀공개형
     recommended: false
@@ -349,7 +381,7 @@ candidates:
     sources: "선택지 수와 중간 선택 편향(가격 앵커링·타협 효과) — 소비자 의사결정 연구"
 
   - key: counsel-info
-    title: "💰 4. 객단가 올리는 상담, 이 4단계로 말해봐"
+    title: "💰 5. 객단가 올리는 상담, 이 4단계로 말해봐"
     category: 브랜딩
     variant: 정보성형
     recommended: true
@@ -385,7 +417,7 @@ candidates:
       업종별(속눈썹·왁싱·피부) 진단 질문 예시 필요하면 DM 줘, 정리해서 보내줄게.
 
   - key: sns-story
-    title: "📱 5. 팔로워 늘리기에 집착하다 시간만 날렸다"
+    title: "📱 6. 팔로워 늘리기에 집착하다 시간만 날렸다"
     category: 마케팅
     variant: 실패경험형+손해형
     recommended: false
@@ -417,7 +449,7 @@ candidates:
       너는 어떤 게시물이 저장 잘 됐어? 하나만 알려줘.
 
   - key: sns-data
-    title: "📱 5. 도달은 팔로워가 아니라 '초기 반응 속도'가 정한다"
+    title: "📱 6. 도달은 팔로워가 아니라 '초기 반응 속도'가 정한다"
     category: 마케팅
     variant: 반전형+데이터형
     recommended: false
@@ -446,7 +478,7 @@ candidates:
     sources: "소셜 알고리즘의 초기 인게이지먼트 가중(도달은 팔로워보다 초기 반응 신호에 좌우)"
 
   - key: sns-info
-    title: "📱 5. 뭘 올려야 저장될까 — 터지는 게시물 5종"
+    title: "📱 6. 뭘 올려야 저장될까 — 터지는 게시물 5종"
     category: 마케팅
     variant: 정보성형+반전형
     recommended: true
@@ -483,7 +515,7 @@ candidates:
       너는 어떤 게시물이 제일 잘 나왔어? 하나만 얘기해줘.
 
   - key: membership-story
-    title: "🎟️ 6. 정기권을 '할인'으로 팔다가 샵만 싸 보였다"
+    title: "🎟️ 7. 정기권을 '할인'으로 팔다가 샵만 싸 보였다"
     category: 시스템
     variant: 실패경험형+반전형
     recommended: false
@@ -516,7 +548,7 @@ candidates:
       너는 정기권 어떻게 팔아? 하나만 알려줘.
 
   - key: membership-data
-    title: "🎟️ 6. 선불 손님이 더 자주 오고 더 많이 쓴다"
+    title: "🎟️ 7. 선불 손님이 더 자주 오고 더 많이 쓴다"
     category: 시스템
     variant: 반전형+손해형
     recommended: true
@@ -546,7 +578,7 @@ candidates:
     sources: "선불·멤버십 고객의 재방문·LTV 우위(구독 모델의 리텐션 효과)"
 
   - key: membership-info
-    title: "🎟️ 6. 팔리는 정기권, 이렇게 설계해"
+    title: "🎟️ 7. 팔리는 정기권, 이렇게 설계해"
     category: 시스템
     variant: 정보성형+반전형
     recommended: false
@@ -581,7 +613,7 @@ candidates:
       너는 정기권을 언제 권해? 하나만 얘기해줘.
 
   - key: burnout-story
-    title: "🔋 7. 손이 아니라 '머리'가 먼저 지쳤다"
+    title: "🔋 8. 손이 아니라 '머리'가 먼저 지쳤다"
     category: 공감
     variant: 반전형+비밀공개형
     recommended: true
@@ -613,7 +645,7 @@ candidates:
       너는 요즘 뭐 때문에 제일 지쳐? 하나만 얘기해줘.
 
   - key: burnout-data
-    title: "🔋 7. 1인 원장을 태우는 건 노동이 아니라 '결정 피로'"
+    title: "🔋 8. 1인 원장을 태우는 건 노동이 아니라 '결정 피로'"
     category: 공감
     variant: 반전형+비밀공개형
     recommended: false
@@ -641,7 +673,7 @@ candidates:
     sources: "결정 피로(decision fatigue) — 반복 판단이 정신적 소진을 부른다는 심리 연구"
 
   - key: burnout-info
-    title: "🔋 7. 안 무너지는 시스템 만들기 (휴식 말고 구조)"
+    title: "🔋 8. 안 무너지는 시스템 만들기 (휴식 말고 구조)"
     category: 공감
     variant: 정보성형+반전형
     recommended: false

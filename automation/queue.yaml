@@ -76,7 +76,7 @@ posts:
   - id: labor-trap
     title: "잘 벌어도 문 닫는 이유 (노동 의존)"
     scheduled_at: "2026-07-21T13:00:00+09:00"
-    approved: true
+    approved: false   # 노션 1번으로 이관 — 노션에서 승인해 발행(중복 방지)
     body: |
       1인샵은 안 돼서 문 닫는 줄 알지?
 
