@@ -270,7 +270,7 @@ def query_approved(dbid):
 
 
 KST = datetime.timezone(datetime.timedelta(hours=9))
-SLOT_HOURS = [13, 21]  # 하루 발행 슬롯: 오후 1시 · 오후 9시 (KST)
+SLOT_TIMES = [(21, 30)]  # 하루 발행 슬롯: 밤 9시 30분 (KST) — 하루 1개
 
 
 def free_slots(queue_data):
@@ -288,8 +288,8 @@ def free_slots(queue_data):
     now_kst = now_utc().astimezone(KST)
     day = now_kst.date()
     while True:
-        for h in SLOT_HOURS:
-            slot = datetime.datetime(day.year, day.month, day.day, h, 0, tzinfo=KST)
+        for hh, mm in SLOT_TIMES:
+            slot = datetime.datetime(day.year, day.month, day.day, hh, mm, tzinfo=KST)
             if slot <= now_kst or slot in used:
                 continue
             yield slot

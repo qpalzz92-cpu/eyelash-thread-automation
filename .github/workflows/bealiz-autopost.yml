@@ -6,8 +6,7 @@ name: Bealiz Threads Auto-Post
 
 on:
   schedule:
-    - cron: "0 5 * * *"      # 매일 오후 2시 KST (05:00 UTC) — 하루 1번째 발행
-    - cron: "0 13 * * *"     # 매일 밤 10시 KST (13:00 UTC) — 하루 2번째 발행
+    - cron: "30 12 * * *"    # 매일 밤 9시 30분 KST (12:30 UTC) — 하루 1개만
   workflow_dispatch:
     inputs:
       dry_run:
