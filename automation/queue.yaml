@@ -75,7 +75,7 @@ posts:
 
   - id: labor-trap
     title: "잘 벌어도 문 닫는 이유 (노동 의존)"
-    scheduled_at: "2026-07-21T21:00:00+09:00"
+    scheduled_at: "2026-07-21T13:00:00+09:00"
     approved: true
     body: |
       1인샵은 안 돼서 문 닫는 줄 알지?
@@ -104,7 +104,7 @@ posts:
   - id: solo-real
     title: "4번 — 1인샵 원장만 아는 외로움 (공감)"
     scheduled_at: "2026-07-22T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       1인샵 원장만 아는 외로움이 있어.
 
@@ -140,7 +140,7 @@ posts:
   - id: price-reason
     title: "5번 — 싼 가격이 원장을 지치게 한다 (데이터+17샵 시야)"
     scheduled_at: "2026-07-23T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       미용업, 3년 생존율 73%로 전 업종 1등이래.
 
@@ -175,7 +175,7 @@ posts:
   - id: delegate-future
     title: "6번 — 덜 가져가도 미래를 샀다 (직언)"
     scheduled_at: "2026-07-24T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       "직원 쓰면 남는 것도 없어."
       1인샵 원장님들이 제일 많이 하는 말이야.
@@ -201,7 +201,7 @@ posts:
   - id: leaky-jar
     title: "7번 — 구멍 난 항아리 (신규보다 단골, 데이터)"
     scheduled_at: "2026-07-25T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       손님 모으려고 광고, 이벤트 다 해봤어?
       근데 왜 남는 게 없지 싶지.
@@ -227,7 +227,7 @@ posts:
   - id: next-booking
     title: "8번 — 다시 오게 하는 법: 다음을 정해주기 (실전)"
     scheduled_at: "2026-07-26T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       손님이 다시 오게 만드는 건
       실력이 아니야. 딱 이거 하나야.
@@ -254,7 +254,7 @@ posts:
   - id: first-day-off
     title: "9번 — 처음 샵을 비운 날 (감성 스토리)"
     scheduled_at: "2026-07-27T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       처음으로 샵을 하루 통째로 비운 날이 기억나.
 
@@ -280,7 +280,7 @@ posts:
   - id: automation-start
     title: "10번 — 자동화, 사실 별거 아니야 (+자료 씨앗)"
     scheduled_at: "2026-07-28T21:00:00+09:00"
-    approved: true
+    approved: false
     body: |
       '자동화 시스템' 하면 거창해 보이지?
 
