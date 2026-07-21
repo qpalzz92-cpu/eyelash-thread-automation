@@ -117,8 +117,8 @@ def find_db_under(parent):
         d = r.json()
         for b in d.get("results", []):
             if b.get("type") == "child_database":
-                t = "".join(x.get("plain_text", "") for x in b["child_database"].get("title", []))
-                if t == DB_TITLE:
+                # child_database.title 은 평문 문자열이다(배열 아님)
+                if b["child_database"].get("title", "") == DB_TITLE:
                     return b["id"]
         if not d.get("has_more"):
             return None
