@@ -102,16 +102,33 @@ def md_to_blocks(md):
 
 
 # ---------- 노션 API ----------
-def search_db():
-    r = requests.post(f"{API}/search", headers=HEADERS,
-                      json={"query": DB_TITLE, "filter": {"property": "object", "value": "database"}},
-                      timeout=30)
-    r.raise_for_status()
-    for res in r.json().get("results", []):
-        t = "".join(x.get("plain_text", "") for x in res.get("title", []))
-        if t == DB_TITLE:
-            return res["id"]
-    return None
+def find_db_under(parent):
+    """지정한 부모 페이지의 자식 중 DB_TITLE 인 데이터베이스 id를 찾는다(없으면 None)."""
+    cursor = None
+    while True:
+        params = {"page_size": 100}
+        if cursor:
+            params["start_cursor"] = cursor
+        r = requests.get(f"{API}/blocks/{parent}/children", headers=HEADERS, params=params, timeout=30)
+        if r.status_code == 404:
+            raise RuntimeError(
+                f"부모 페이지({parent}) 접근 불가(404). 노션에서 해당 페이지를 통합(integration)에 공유했는지 확인하세요.")
+        r.raise_for_status()
+        d = r.json()
+        for b in d.get("results", []):
+            if b.get("type") == "child_database":
+                t = "".join(x.get("plain_text", "") for x in b["child_database"].get("title", []))
+                if t == DB_TITLE:
+                    return b["id"]
+        if not d.get("has_more"):
+            return None
+        cursor = d.get("next_cursor")
+
+
+def archive_db(dbid):
+    """잘못 만든 DB를 휴지통으로 보낸다(정리용)."""
+    r = requests.patch(f"{API}/databases/{dbid}", headers=HEADERS, json={"archived": True}, timeout=30)
+    return r.ok
 
 
 def create_db(parent_page_id):
@@ -180,11 +197,22 @@ def main():
         log("ERROR: notion_sales_config.json 에 parent_page_id 가 필요합니다.")
         sys.exit(1)
 
-    dbid = cfg.get("database_id") or search_db()
+    # 잘못된 위치에 만들었던 DB 정리(휴지통)
+    for old in cfg.get("archive_db", []):
+        try:
+            if archive_db(old):
+                log(f"기존 잘못된 DB 정리: {old}")
+        except Exception as e:
+            log(f"DB 정리 실패(무시): {old} {e}")
+
+    dbid = find_db_under(parent)
     if not dbid:
         dbid = create_db(parent)
-        log(f"노션 DB 생성: {dbid}")
+        log(f"노션 DB 생성(부모 {parent} 아래): {dbid}")
+    else:
+        log(f"기존 DB 사용: {dbid}")
     cfg["database_id"] = dbid
+    cfg.pop("archive_db", None)
     save_cfg(cfg)
 
     existing = {title_of(r): r["id"] for r in query_all(dbid)}
