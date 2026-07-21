@@ -218,8 +218,9 @@ def group_key(title):
 
 
 def qid_for(pid):
-    """queue id 규칙(sync 와 동일): notion-<page_id 앞 8자>."""
-    return "notion-" + pid.replace("-", "")[:8]
+    """queue id 규칙(sync 와 동일): notion-<page_id 전체>.
+    (같은 배치로 만든 노션 페이지는 id 앞부분이 겹쳐서 앞 8자만 쓰면 충돌함 → 전체 사용)"""
+    return "notion-" + pid.replace("-", "")
 
 
 def row_status(row):
@@ -380,6 +381,11 @@ def sync():
         log("게시판(DB)이 아직 없습니다. setup 먼저 실행하세요.")
         return
     rows = query_approved(dbid)
+    # 주제 번호(제목 'N.') 오름차순 → 1번부터 순서대로 발행
+    def _numkey(r):
+        g = group_key(plain(r["properties"].get("제목")))
+        return int(g) if g.isdigit() else 999
+    rows = sorted(rows, key=_numkey)
     state = load_json(STATE, {"posted": {}})
     synced = state.setdefault("notion_synced", [])
 
@@ -410,7 +416,7 @@ def sync():
             sched = start if "T" in start else f"{start}T21:00:00+09:00"
         else:
             sched = next(slots).isoformat()
-        qid = "notion-" + pid.replace("-", "")[:8]
+        qid = qid_for(pid)
 
         entry = [f"  - id: {qid}",
                  f'    title: "{title[:60]}"',
