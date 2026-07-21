@@ -180,11 +180,21 @@ def create_page(dbid, title, card_no, slug, blocks):
         "주제": {"rich_text": rt(slug)},
         "상태": {"select": {"name": "판매점 전용"}},
     }
-    payload = {"parent": {"database_id": dbid}, "properties": props, "children": blocks[:100]}
-    r = requests.post(f"{API}/pages", headers=HEADERS, json=payload, timeout=30)
+    # 1) 페이지(행) 생성 — 속성만
+    r = requests.post(f"{API}/pages", headers=HEADERS,
+                      json={"parent": {"database_id": dbid}, "properties": props}, timeout=30)
     if not r.ok:
         raise RuntimeError(f"페이지 생성 실패 {r.status_code}: {r.text}")
-    return r.json()["id"]
+    pid = r.json()["id"]
+    # 2) 본문 블록을 100개씩 나눠 실제로 추가(append)
+    added = 0
+    for i in range(0, len(blocks), 100):
+        rr = requests.patch(f"{API}/blocks/{pid}/children", headers=HEADERS,
+                            json={"children": blocks[i:i + 100]}, timeout=30)
+        if not rr.ok:
+            raise RuntimeError(f"본문 블록 추가 실패 {rr.status_code}: {rr.text}")
+        added += len(rr.json().get("results", []))
+    return pid, added
 
 
 def main():
@@ -227,9 +237,9 @@ def main():
         title = title or name
         if title in existing:
             archive(existing[title])             # 기존 것 보관 후 최신으로 교체
-        create_page(dbid, title, card_no, slug, blocks)
+        _, added = create_page(dbid, title, card_no, slug, blocks)
         n += 1
-        log(f"노션 발행: [{card_no}] {title}")
+        log(f"노션 발행: [{card_no}] {title}  (본문 {added}블록)")
     log(f"완료: {n}개 문서 노션에 발행.  DB: {DB_TITLE}")
 
 
