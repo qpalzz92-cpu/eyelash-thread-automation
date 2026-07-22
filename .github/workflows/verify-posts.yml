@@ -15,39 +15,44 @@ jobs:
       - name: 의존성 설치
         run: pip install requests
 
-      - name: 발행 결과 검증
+      - name: 토큰 진단
         env:
           THREADS_ACCESS_TOKEN_ROA: ${{ secrets.THREADS_ACCESS_TOKEN }}
           THREADS_ACCESS_TOKEN_BEALIZ: ${{ secrets.THREADS_ACCESS_TOKEN_BEALIZ }}
         run: |
           python - <<'PY'
-          import os, requests, json
-          API = "https://graph.threads.net/v1.0"
+          import os, requests
+          API = "https://graph.threads.net"
 
           checks = [
-              ("로아",     os.environ["THREADS_ACCESS_TOKEN_ROA"],    "18200020696368366"),
-              ("비올리즈", os.environ["THREADS_ACCESS_TOKEN_BEALIZ"], "18142850392546962"),
+              ("로아",     os.environ.get("THREADS_ACCESS_TOKEN_ROA", "")),
+              ("비올리즈", os.environ.get("THREADS_ACCESS_TOKEN_BEALIZ", "")),
           ]
 
-          for label, token, pid in checks:
-              print("=" * 50)
-              print(f"[{label}] post_id={pid}")
-              # 1) 계정 정보
-              me = requests.get(f"{API}/me", params={"fields": "id,username,threads_profile_picture_url", "access_token": token}, timeout=30)
-              print("  /me:", me.status_code, me.text[:300])
-              # 2) 이 글 자체 조회
-              r = requests.get(f"{API}/{pid}", params={
-                  "fields": "id,permalink,text,timestamp,shortcode,is_reply,media_type,owner",
-                  "access_token": token}, timeout=30)
-              print("  /post:", r.status_code, r.text[:600])
-              # 3) 최근 내 글 목록 (실제 계정에 뭐가 올라가있는지)
-              t = requests.get(f"{API}/me/threads", params={
-                  "fields": "id,permalink,text,timestamp",
-                  "limit": 5, "access_token": token}, timeout=30)
-              print("  최근 게시물 5개:", t.status_code)
+          for label, token in checks:
+              print("=" * 55)
+              tok_len = len(token)
+              print(f"[{label}] 토큰 길이={tok_len} (0이면 Secret 비어있음)")
+              if not token:
+                  continue
+
+              # 1) 기본 호출
+              me = requests.get(f"{API}/v1.0/me", params={"fields": "id,username", "access_token": token}, timeout=30)
+              print("  /me:", me.status_code, me.text[:250])
+
+              # 2) 토큰 디버그 (유효성/권한/만료시각)
+              dbg = requests.get(f"{API}/debug_token", params={"input_token": token, "access_token": token}, timeout=30)
+              print("  debug_token:", dbg.status_code, dbg.text[:400])
+
+              # 3) 장기 토큰 리프레시 시도 (토큰값은 출력 안 함, 상태/만료만)
+              rf = requests.get(f"{API}/refresh_access_token",
+                                params={"grant_type": "th_refresh_token", "access_token": token}, timeout=30)
               try:
-                  for item in t.json().get("data", []):
-                      print("    -", item.get("timestamp"), item.get("permalink"), repr((item.get("text") or "")[:40]))
-              except Exception as e:
-                  print("    (파싱 실패)", t.text[:300])
+                  j = rf.json()
+              except Exception:
+                  j = {}
+              if "access_token" in j:
+                  print("  refresh: OK — 리프레시 가능, expires_in(초)=", j.get("expires_in"))
+              else:
+                  print("  refresh:", rf.status_code, rf.text[:300])
           PY
