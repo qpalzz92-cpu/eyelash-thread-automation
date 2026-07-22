@@ -62,7 +62,7 @@ html,body{width:1080px;height:1350px}
 .lockpill{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#2563EB;color:#fff;
  font-weight:800;font-size:38px;padding:22px 40px;border-radius:999px;white-space:nowrap;box-shadow:0 12px 30px rgba(37,99,235,.35)}
 .ctabtn{background:#2563EB;color:#fff;font-weight:800;font-size:44px;padding:36px 20px;border-radius:22px;text-align:center;margin-top:44px;box-shadow:0 16px 34px rgba(37,99,235,.28)}
-.partner{background:#EDF3FF;border-radius:30px;padding:36px 46px;display:inline-flex;align-items:center;gap:30px;align-self:flex-start}
+.partner{background:#EDF3FF;border-radius:30px;padding:36px 46px;display:inline-flex;align-items:center;gap:30px;align-self:center}
 .plogo{flex:none;width:112px;height:112px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;line-height:1.0;color:#1b2a55;letter-spacing:1px;box-shadow:0 8px 22px rgba(37,99,235,.12)}
 .plogo small{font-weight:600;font-size:11px;color:#9aa6bd;letter-spacing:0;margin-top:4px}
 .pname{font-weight:900;font-size:54px;letter-spacing:-1.5px}
@@ -154,12 +154,12 @@ def _closer(c, dot):
             f'<div class="punch">{c["punch"]}</div></div>{_bottom(dot)}')
 
 def _cta(c, dot):
-    return (f'<div class="mid">'
+    return (f'<div class="mid" style="text-align:center">'
             f'<div class="partner">'
             f'<div class="plogo">Liz line<small>LASH ADDICT PARTNER</small></div>'
             f'<div style="text-align:left"><div class="pname">리즈라인 파트너스</div>'
             f'<div class="psub">래쉬애딕트 판매점 전용방</div></div></div>'
-            f'<div class="note" style="margin-top:48px">{br(c["note"])}</div>'
+            f'<div class="note" style="text-align:center;margin-top:48px">{br(c["note"])}</div>'
             f'<div class="ctabtn">{c["button"]}</div></div>{_bottom(dot)}')
 
 RENDERERS = {"cover":_cover,"statement":_statement,"point":_point,"mentte":_mentte,
