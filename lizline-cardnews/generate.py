@@ -37,7 +37,7 @@ html,body{width:1080px;height:1350px}
 .kicker{font-weight:700;font-size:30px;color:#2563EB;letter-spacing:2px;margin-bottom:30px}
 .title{font-weight:900;font-size:78px;line-height:1.3;letter-spacing:-1.5px}
 .title.sm{font-size:62px}
-.hl{background:#2563EB;color:#fff;border-radius:14px;padding:2px 16px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.hl{background:#2563EB;color:#fff;border-radius:12px;padding:1px 12px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .blue{color:#2563EB}
 .sub{font-weight:500;font-size:40px;line-height:1.5;color:#93A0B4;margin-top:34px}
 .sub b{color:#14161A;font-weight:800}
@@ -62,6 +62,11 @@ html,body{width:1080px;height:1350px}
 .lockpill{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#2563EB;color:#fff;
  font-weight:800;font-size:38px;padding:22px 40px;border-radius:999px;white-space:nowrap;box-shadow:0 12px 30px rgba(37,99,235,.35)}
 .ctabtn{background:#2563EB;color:#fff;font-weight:800;font-size:44px;padding:36px 20px;border-radius:22px;text-align:center;margin-top:44px;box-shadow:0 16px 34px rgba(37,99,235,.28)}
+.partner{background:#EDF3FF;border-radius:30px;padding:36px 46px;display:inline-flex;align-items:center;gap:30px;margin:0 auto}
+.plogo{flex:none;width:112px;height:112px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:23px;line-height:1.0;color:#1b2a55;letter-spacing:1px;box-shadow:0 8px 22px rgba(37,99,235,.12)}
+.plogo small{font-weight:600;font-size:11px;color:#9aa6bd;letter-spacing:0;margin-top:4px}
+.pname{font-weight:900;font-size:54px;letter-spacing:-1.5px}
+.psub{font-weight:600;font-size:30px;color:#93A0B4;margin-top:8px}
 .dots{display:flex;gap:12px;align-items:center}
 .dot{width:16px;height:16px;border-radius:50%;background:#D8E1F0}
 .dot.on{width:46px;background:#2563EB}
@@ -100,9 +105,17 @@ def _point(c, dot):
 def _mentte(c, dot, locked=False):
     lock = f'<span class="lockpill">공식 판매점 전용 · DM</span>' if locked else ""
     lk = " locked" if locked else ""
+    # 노트 끝의 "# 태그"를 뽑아 멘트 박스 위 pill로 올린다
+    note = c["note"]
+    tag_html = ""
+    if " # " in note:
+        note, _, t = note.rpartition(" # ")
+        tag_html = ('<div style="text-align:center">'
+                    f'<span class="tag" style="margin-top:0;margin-bottom:34px"># {t}</span></div>')
     return (f'<div class="badge">{c["badge"]}</div>'
-            f'<div class="mid"><div class="quote{lk}"><span class="qt">{c["quote"]}</span>{lock}</div>'
-            f'<div class="note" style="text-align:center;margin-top:44px">{c["note"]}</div></div>{_bottom(dot)}')
+            f'<div class="mid">{tag_html}'
+            f'<div class="quote{lk}"><span class="qt">{c["quote"]}</span>{lock}</div>'
+            f'<div class="note" style="text-align:center;margin-top:40px">{note}</div></div>{_bottom(dot)}')
 
 def _checklist(c, dot):
     items = "".join(f'<div class="item"><div class="chk">✓</div><div class="t">{t}</div></div>'
@@ -127,8 +140,11 @@ def _closer(c, dot):
 
 def _cta(c, dot):
     return (f'<div class="mid" style="text-align:center">'
-            f'<div class="title" style="text-align:center">{c["title"]}</div>'
-            f'<div class="note" style="text-align:center;margin-top:40px">{c["note"]}</div>'
+            f'<div class="partner">'
+            f'<div class="plogo">Liz line<small>LASH ADDICT PARTNER</small></div>'
+            f'<div style="text-align:left"><div class="pname">리즈라인 파트너스</div>'
+            f'<div class="psub">래쉬애딕트 판매점 전용방</div></div></div>'
+            f'<div class="note" style="text-align:center;margin-top:48px">{c["note"]}</div>'
             f'<div class="ctabtn">{c["button"]}</div></div>{_bottom(dot)}')
 
 RENDERERS = {"cover":_cover,"statement":_statement,"point":_point,"mentte":_mentte,
