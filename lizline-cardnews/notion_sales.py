@@ -23,6 +23,8 @@ CONFIG = ROOT / "notion_sales_config.json"
 DETAILED = ROOT / "detailed"
 
 TOKEN = os.environ.get("NOTION_TOKEN")
+CANVA_LINKS = json.load(open(ROOT / "canva_links.json", encoding="utf-8")) \
+    if (ROOT / "canva_links.json").exists() else {}
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Notion-Version": NOTION_VERSION,
@@ -159,6 +161,7 @@ def create_db(parent_page_id):
         "제목": {"title": {}},
         "카드뉴스": {"rich_text": {}},
         "주제": {"rich_text": {}},
+        "캔바링크": {"url": {}},
         "상태": {"select": {"options": [
             {"name": "판매점 전용", "color": "blue"},
             {"name": "검토중", "color": "gray"},
@@ -196,13 +199,15 @@ def archive(pid):
     requests.patch(f"{API}/pages/{pid}", headers=HEADERS, json={"archived": True}, timeout=30)
 
 
-def create_page(dbid, title, card_no, slug, blocks):
+def create_page(dbid, title, card_no, slug, blocks, canva_url=None):
     props = {
         "제목": {"title": rt(title)},
         "카드뉴스": {"rich_text": rt(f"{card_no}번")},
         "주제": {"rich_text": rt(slug)},
         "상태": {"select": {"name": "판매점 전용"}},
     }
+    if canva_url:
+        props["캔바링크"] = {"url": canva_url}
     # 1) 페이지(행) 생성 — 속성만
     r = requests.post(f"{API}/pages", headers=HEADERS,
                       json={"parent": {"database_id": dbid}, "properties": props}, timeout=30)
@@ -248,6 +253,10 @@ def main():
     cfg.pop("archive_db", None)
     save_cfg(cfg)
 
+    # 기존 DB에 캔바링크(URL) 열이 없으면 추가 (있으면 무해)
+    requests.patch(f"{API}/databases/{dbid}", headers=HEADERS,
+                   json={"properties": {"캔바링크": {"url": {}}}}, timeout=30)
+
     existing = {title_of(r): r["id"] for r in query_all(dbid)}
     files = sorted(glob.glob(str(DETAILED / "*.md")))
     n = 0
@@ -260,7 +269,7 @@ def main():
         title = title or name
         if title in existing:
             archive(existing[title])             # 기존 것 보관 후 최신으로 교체
-        _, added = create_page(dbid, title, card_no, slug, blocks)
+        _, added = create_page(dbid, title, card_no, slug, blocks, CANVA_LINKS.get(name))
         n += 1
         log(f"노션 발행: [{card_no}] {title}  (본문 {added}블록)")
     log(f"완료: {n}개 문서 노션에 발행.  DB: {DB_TITLE}")
