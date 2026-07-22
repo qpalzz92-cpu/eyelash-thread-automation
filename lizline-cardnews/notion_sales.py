@@ -47,6 +47,29 @@ def rt(text):
     return [{"type": "text", "text": {"content": text[:1990]}}]
 
 
+# ---------- 모바일 가독성: 한 줄을 짧게 자동 줄바꿈 ----------
+WRAP_WIDTH = 22  # 한 줄 최대 글자수(어절 단위). 폰에서 가로로 안 길게.
+
+def _wrap_line(s, width=WRAP_WIDTH):
+    words = s.split(" ")
+    out, cur = [], ""
+    for w in words:
+        if not cur:
+            cur = w
+        elif len(cur) + 1 + len(w) <= width:
+            cur += " " + w
+        else:
+            out.append(cur)
+            cur = w
+    if cur:
+        out.append(cur)
+    return "\n".join(out)
+
+def wrap(text, width=WRAP_WIDTH):
+    # 이미 있는 줄바꿈은 유지하고, 각 줄을 width 기준으로 다시 짧게 나눈다.
+    return "\n".join(_wrap_line(ln, width) for ln in text.split("\n"))
+
+
 # ---------- 마크다운 → 노션 블록 ----------
 def md_to_blocks(md):
     """제목(첫 # 줄)은 title로 반환, 나머지는 블록 리스트로."""
@@ -63,7 +86,7 @@ def md_to_blocks(md):
         if not text:
             return
         blocks.append({"object": "block", "type": "paragraph",
-                       "paragraph": {"rich_text": rt(text)}})
+                       "paragraph": {"rich_text": rt(wrap(text))}})
 
     i = 0
     while i < len(lines):
@@ -91,7 +114,7 @@ def md_to_blocks(md):
             while i < len(lines) and lines[i].strip():
                 buf.append(lines[i].rstrip()); i += 1
             blocks.append({"object": "block", "type": "callout",
-                           "callout": {"rich_text": rt("\n".join(buf)),
+                           "callout": {"rich_text": rt(wrap("\n".join(buf))),
                                        "icon": {"type": "emoji", "emoji": "💬"},
                                        "color": "blue_background"}})
             continue
