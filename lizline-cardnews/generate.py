@@ -8,7 +8,7 @@
          python3 generate.py 2       (2번 주제만)
 필요:    lizline-cardnews/fonts/*.woff2 , Chromium (헤드리스)
 """
-import base64, os, sys, subprocess, html as _html
+import base64, os, sys, subprocess, re, html as _html
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FONTS = os.path.join(BASE, "fonts")
@@ -80,15 +80,26 @@ def _dots(on):
 def _bottom(on):
     return f'<div class="bottom">{_dots(on)}<span class="handle">리즈라인</span></div>'
 
+# ---------- 절 단위 자동 줄바꿈 ----------
+def br(s):
+    """본문이 폭에 맞춰 단어가 뚝 떨어지지 않게, 쉼표/문장 끝에서만 줄을 바꾼다.
+    (이미 있는 <br>는 유지). 예: '총액은 비싸 보여도, 쓰는...' -> '총액은 비싸 보여도,<br>쓰는...'"""
+    if not s:
+        return s
+    parts = s.split("<br>")
+    parts = [re.sub(r'(?<=[,.])\s+', '<br>', p) for p in parts]
+    return "<br>".join(parts)
+
+
 # ---------- 카드 타입별 렌더 ----------
 def _cover(c, dot):
     return (f'<div class="kicker">리즈라인 판매 노하우</div>'
             f'<div class="mid"><div class="title">{c["title"]}</div>'
-            f'<div class="sub">{c["sub"]}</div></div>{_bottom(dot)}')
+            f'<div class="sub">{br(c["sub"])}</div></div>{_bottom(dot)}')
 
 def _statement(c, dot):
-    lead = f'<div class="lead" style="margin-top:40px">{c["lead"]}</div>' if c.get("lead") else ""
-    note = f'<div class="note">{c["note"]}</div>' if c.get("note") else ""
+    lead = f'<div class="lead" style="margin-top:40px">{br(c["lead"])}</div>' if c.get("lead") else ""
+    note = f'<div class="note">{br(c["note"])}</div>' if c.get("note") else ""
     tag  = f'<div><span class="tag">{c["tag"]}</span></div>' if c.get("tag") else ""
     title= f'<div class="title">{c["title"]}</div>' if c.get("title") else ""
     return f'<div class="mid">{title}{note}{lead}{tag}</div>{_bottom(dot)}'
@@ -98,7 +109,7 @@ def _point(c, dot):
                     for h,d in c["duo"])
     return (f'<div class="badge">{c["badge"]}</div>'
             f'<div class="mid"><div class="title">{c["title"]}</div>'
-            f'<div class="note">{c["note"]}</div>'
+            f'<div class="note">{br(c["note"])}</div>'
             f'<div class="duo">{boxes}</div>'
             f'<div class="punch">{c["punch"]}</div></div>{_bottom(dot)}')
 
@@ -115,7 +126,7 @@ def _mentte(c, dot, locked=False):
     return (f'<div class="badge">{c["badge"]}</div>'
             f'<div class="mid">{tag_html}'
             f'<div class="quote{lk}"><span class="qt">{c["quote"]}</span>{lock}</div>'
-            f'<div class="note" style="text-align:center;margin-top:40px">{note}</div></div>{_bottom(dot)}')
+            f'<div class="note" style="text-align:center;margin-top:40px">{br(note)}</div></div>{_bottom(dot)}')
 
 def _checklist(c, dot):
     items = "".join(f'<div class="item"><div class="chk">✓</div><div class="t">{t}</div></div>'
@@ -123,19 +134,19 @@ def _checklist(c, dot):
     return (f'<div class="badge">{c["badge"]}</div>'
             f'<div class="mid"><div class="title sm" style="margin-bottom:40px">{c["title"]}</div>'
             f'{items}'
-            f'<div class="note" style="text-align:center;margin-top:36px">{c["footer"]}</div></div>{_bottom(dot)}')
+            f'<div class="note" style="text-align:center;margin-top:36px">{br(c["footer"])}</div></div>{_bottom(dot)}')
 
 def _apply(c, dot):
     return (f'<div class="badge">{c["badge"]}</div>'
             f'<div class="mid"><div class="lead">{c["lead"]}</div>'
             f'<div class="quote" style="margin-top:44px"><span class="qt">{c["quote"]}</span></div>'
-            f'<div class="note" style="text-align:center">{c["note"]}</div></div>{_bottom(dot)}')
+            f'<div class="note" style="text-align:center">{br(c["note"])}</div></div>{_bottom(dot)}')
 
 def _closer(c, dot):
     tag = f'<div style="text-align:center"><span class="tag">{c["tag"]}</span></div>' if c.get("tag") else ""
     return (f'<div class="badge">{c["badge"]}</div>'
             f'<div class="mid"><div class="title">{c["title"]}</div>'
-            f'<div class="note">{c["note"]}</div>'
+            f'<div class="note">{br(c["note"])}</div>'
             f'<div class="punch">{c["punch"]}</div>{tag}</div>{_bottom(dot)}')
 
 def _cta(c, dot):
@@ -144,7 +155,7 @@ def _cta(c, dot):
             f'<div class="plogo">Liz line<small>LASH ADDICT PARTNER</small></div>'
             f'<div style="text-align:left"><div class="pname">리즈라인 파트너스</div>'
             f'<div class="psub">래쉬애딕트 판매점 전용방</div></div></div>'
-            f'<div class="note" style="text-align:center;margin-top:48px">{c["note"]}</div>'
+            f'<div class="note" style="text-align:center;margin-top:48px">{br(c["note"])}</div>'
             f'<div class="ctabtn">{c["button"]}</div></div>{_bottom(dot)}')
 
 RENDERERS = {"cover":_cover,"statement":_statement,"point":_point,"mentte":_mentte,
