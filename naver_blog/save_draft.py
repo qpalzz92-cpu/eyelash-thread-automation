@@ -86,65 +86,93 @@ def ensure_logged_in(page, write_url):
 # ---------------------------------------------------------------------------
 # 방해 팝업 닫기 (이어쓰기 팝업 / 도움말 등)
 # ---------------------------------------------------------------------------
-def close_popups(frame, page):
-    # "작성 중인 글이 있습니다. 이어서 작성하시겠어요?" -> [취소] (새 글로 시작)
-    for sel in [
-        "button.se-popup-button-cancel",
-        ".se-popup-button-cancel",
-        "button:has-text('취소')",
-    ]:
-        try:
-            frame.locator(sel).first.click(timeout=2500)
-            log("  · 이어쓰기 팝업 닫음 (새 글로 시작)")
-            break
-        except PWTimeout:
-            continue
-        except Exception:
-            continue
+def dismiss_draft_popup(frame, page, total_wait_ms=12000):
+    """
+    '작성 중인 글이 있습니다. 이어서 작성하시겠어요?' 팝업을 [취소] 눌러 닫는다.
+    이 팝업은 에디터가 뜬 뒤 몇 초 있다가 나타나므로, 일정 시간 지켜보며 기다린다.
+    """
+    waited = 0
+    step = 800
+    while waited < total_wait_ms:
+        for finder in (
+            lambda: frame.get_by_role("button", name="취소"),
+            lambda: frame.locator(".se-popup-button-cancel"),
+            lambda: frame.locator("button:has-text('취소')"),
+            lambda: frame.locator(".se-popup-button-text:has-text('취소')"),
+        ):
+            try:
+                btn = finder().first
+                if btn.is_visible():
+                    btn.click(timeout=1500)
+                    log("  · 이어쓰기 팝업 [취소] 클릭 (새 글로 시작)")
+                    page.wait_for_timeout(1000)
+                    return True
+            except Exception:
+                pass
+        page.wait_for_timeout(step)
+        waited += step
+    log("  · 이어쓰기 팝업 못 봄 (없거나 이미 닫힘) — 계속 진행")
+    return False
+
+
+def close_help_layers(frame):
     # 도움말/가이드 레이어가 있으면 닫기 (있을 때만)
     for sel in ["button:has-text('닫기')", ".se-help-panel-close-button"]:
         try:
-            frame.locator(sel).first.click(timeout=1500)
+            frame.locator(sel).first.click(timeout=1000)
         except Exception:
             pass
-    page.wait_for_timeout(500)
 
 
 # ---------------------------------------------------------------------------
 # 제목 입력
 # ---------------------------------------------------------------------------
 def fill_title(page, frame, title):
-    for sel in [
+    selectors = [
         ".se-section-documentTitle .se-text-paragraph",
+        ".se-documentTitle .se-text-paragraph",
+        ".se-title-text .se-text-paragraph",
+        ".se-section-documentTitle",
         ".se-documentTitle",
-        ".se-placeholder.__se_placeholder",
-    ]:
-        try:
-            frame.locator(sel).first.click(timeout=4000)
-            page.keyboard.insert_text(title)
-            log("  · 제목 입력 완료")
-            return
-        except Exception:
-            continue
-    raise RuntimeError("제목 입력 영역을 찾지 못했습니다. (에디터 구조 변경 가능성)")
+    ]
+    last_err = None
+    for attempt in range(2):
+        for sel in selectors:
+            try:
+                frame.locator(sel).first.click(timeout=3000)
+                page.keyboard.insert_text(title)
+                log("  · 제목 입력 완료")
+                return
+            except Exception as e:
+                last_err = e
+                continue
+        # 실패 시: 팝업이 다시 떠서 가렸을 수 있으니 한 번 더 닫고 재시도
+        dismiss_draft_popup(frame, page, total_wait_ms=4000)
+    raise RuntimeError(f"제목 입력 영역을 찾지 못했습니다. (마지막 오류: {last_err})")
 
 
 # ---------------------------------------------------------------------------
 # 본문 입력 (줄 단위로 넣어 문단 구조 유지)
 # ---------------------------------------------------------------------------
 def fill_body(page, frame, lines):
-    clicked = False
-    for sel in [
+    selectors = [
         ".se-section-text .se-text-paragraph",
         ".se-component.se-text .se-text-paragraph",
         ".se-section-text",
-    ]:
-        try:
-            frame.locator(sel).first.click(timeout=4000)
-            clicked = True
+        ".se-content .se-text-paragraph",
+    ]
+    clicked = False
+    for attempt in range(2):
+        for sel in selectors:
+            try:
+                frame.locator(sel).first.click(timeout=3000)
+                clicked = True
+                break
+            except Exception:
+                continue
+        if clicked:
             break
-        except Exception:
-            continue
+        dismiss_draft_popup(frame, page, total_wait_ms=4000)
     if not clicked:
         raise RuntimeError("본문 입력 영역을 찾지 못했습니다. (에디터 구조 변경 가능성)")
 
@@ -203,7 +231,8 @@ def run(post_path, blog_id, auto_save):
             page.wait_for_timeout(3000)
 
             frame = page.frame_locator("#mainFrame")
-            close_popups(frame, page)
+            dismiss_draft_popup(frame, page)
+            close_help_layers(frame)
             fill_title(page, frame, title)
             fill_body(page, frame, body_lines)
 
