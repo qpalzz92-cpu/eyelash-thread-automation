@@ -13,6 +13,7 @@
   python save_draft.py posts/속눈썹연장창업.txt --blog-id promote3404 --auto-save
 """
 import argparse
+import json
 import pathlib
 import sys
 
@@ -21,10 +22,27 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent
 PROFILE_DIR = ROOT / ".profile"
 SHOT_PATH = ROOT / "last_run.png"
+STATE_PATH = ROOT / "state.json"   # 이미 임시저장한 글 기록(중복 방지)
 
 
 def log(msg):
     print(msg, flush=True)
+
+
+def load_saved():
+    try:
+        return set(json.loads(STATE_PATH.read_text(encoding="utf-8")))
+    except Exception:
+        return set()
+
+
+def add_saved(name):
+    s = load_saved()
+    s.add(name)
+    try:
+        STATE_PATH.write_text(json.dumps(sorted(s), ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -250,8 +268,22 @@ def process_one(page, post_path, auto_save):
     return title
 
 
-def run(post_paths, blog_id, auto_save):
+def run(post_paths, blog_id, auto_save, force=False):
     write_url = f"https://blog.naver.com/{blog_id}/postwrite"
+
+    # 자동 저장 모드면, 이미 저장한 글은 건너뛴다(중복 방지). --force 면 무시.
+    if auto_save and not force:
+        saved = load_saved()
+        remaining = [p for p in post_paths if pathlib.Path(p).name not in saved]
+        skipped = len(post_paths) - len(remaining)
+        if skipped:
+            log(f"[안내] 이미 저장된 {skipped}편은 건너뜁니다. (다시 하려면 --force)")
+        post_paths = remaining
+
+    if not post_paths:
+        log("[안내] 새로 저장할 글이 없습니다. (모두 이미 저장됨)")
+        return
+
     log(f"[블로그] {blog_id}")
     log(f"[글 개수] {len(post_paths)}편")
     log(f"[모드] {'임시저장까지 자동' if auto_save else '입력만 (저장은 직접)'}")
@@ -277,6 +309,8 @@ def run(post_paths, blog_id, auto_save):
                 try:
                     title = process_one(page, pp, auto_save)
                     done.append(title)
+                    if auto_save:
+                        add_saved(pathlib.Path(pp).name)
                     log(f"  ✅ 완료: {pp}")
                 except Exception as e:
                     failed.append(pp)
@@ -309,10 +343,13 @@ def main():
     ap.add_argument("--all", action="store_true", help="posts 폴더의 모든 .txt 자동 처리")
     ap.add_argument("--blog-id", required=True, help="네이버 블로그 아이디 (예: promote3404)")
     ap.add_argument("--auto-save", action="store_true", help="임시저장까지 자동")
+    ap.add_argument("--force", action="store_true", help="이미 저장한 글도 다시 저장")
     args = ap.parse_args()
 
     if args.all:
-        posts = [str(p) for p in sorted((ROOT / "posts").glob("*.txt"))]
+        # '_' 로 시작하는 파일(_manifest 등)은 글이 아니므로 제외
+        posts = [str(p) for p in sorted((ROOT / "posts").glob("*.txt"))
+                 if not p.name.startswith("_")]
         auto_save = True
     elif args.post:
         posts = args.post
@@ -324,7 +361,7 @@ def main():
     if not posts:
         log("[오류] 처리할 글이 없습니다.")
         sys.exit(1)
-    run(posts, args.blog_id, auto_save)
+    run(posts, args.blog_id, auto_save, force=args.force)
 
 
 if __name__ == "__main__":
