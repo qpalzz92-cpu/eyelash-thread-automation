@@ -127,6 +127,29 @@ def close_help_layers(scope):
             pass
 
 
+def normalize_format(scope, page):
+    """
+    입력 직전, 켜져 있을 수 있는 글자 서식(취소선/굵게/기울임/밑줄)을 끈다.
+    (켜진 게 확실할 때만 눌러서, 실수로 서식을 '추가'하지 않도록 보수적으로 동작)
+    """
+    for name in ("취소선", "굵게", "기울임꼴", "기울임", "밑줄"):
+        try:
+            btn = scope.get_by_role("button", name=name).first
+            if btn.count() == 0:
+                continue
+            pressed = (btn.get_attribute("aria-pressed") or "")
+            cls = (btn.get_attribute("class") or "")
+            active = pressed == "true" or any(
+                k in cls for k in ("se-is-selected", "-active", "active", "selected")
+            )
+            if active:
+                btn.click()
+                page.wait_for_timeout(150)
+                log(f"  · 서식 끔: {name}")
+        except Exception:
+            continue
+
+
 # ---------------------------------------------------------------------------
 # 제목 입력
 # ---------------------------------------------------------------------------
@@ -143,6 +166,7 @@ def fill_title(page, scope, title):
         for sel in selectors:
             try:
                 scope.locator(sel).first.click(timeout=3000)
+                normalize_format(scope, page)
                 page.keyboard.insert_text(title)
                 log("  · 제목 입력 완료")
                 return
@@ -177,6 +201,9 @@ def fill_body(page, scope, lines):
         dismiss_draft_popup(scope, page, total_wait_ms=4000)
     if not clicked:
         raise RuntimeError("본문 입력 영역을 찾지 못했습니다.")
+
+    # 입력 직전 서식(취소선 등) 끄기 → 본문에 줄 안 생기게
+    normalize_format(scope, page)
 
     first = True
     for line in lines:
