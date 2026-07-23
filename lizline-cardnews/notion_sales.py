@@ -160,7 +160,6 @@ def create_db(parent_page_id):
     props = {
         "제목": {"title": {}},
         "카드뉴스": {"rich_text": {}},
-        "주제": {"rich_text": {}},
         "캔바링크": {"url": {}},
         "상태": {"select": {"options": [
             {"name": "판매점 전용", "color": "blue"},
@@ -203,7 +202,6 @@ def create_page(dbid, title, card_no, slug, blocks, canva_url=None):
     props = {
         "제목": {"title": rt(title)},
         "카드뉴스": {"rich_text": rt(f"{card_no}번")},
-        "주제": {"rich_text": rt(slug)},
         "상태": {"select": {"name": "판매점 전용"}},
     }
     if canva_url:
@@ -253,9 +251,9 @@ def main():
     cfg.pop("archive_db", None)
     save_cfg(cfg)
 
-    # 기존 DB에 캔바링크(URL) 열이 없으면 추가 (있으면 무해)
+    # 기존 DB에 캔바링크(URL) 열이 없으면 추가 / 내부용 '주제' 열은 제거
     requests.patch(f"{API}/databases/{dbid}", headers=HEADERS,
-                   json={"properties": {"캔바링크": {"url": {}}}}, timeout=30)
+                   json={"properties": {"캔바링크": {"url": {}}, "주제": None}}, timeout=30)
 
     existing = {title_of(r): r["id"] for r in query_all(dbid)}
     files = sorted(glob.glob(str(DETAILED / "*.md")))
