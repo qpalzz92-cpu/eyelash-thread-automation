@@ -236,12 +236,24 @@ def click_save(scope, page):
 
 
 # ---------------------------------------------------------------------------
-def run(post_path, blog_id, auto_save):
+def process_one(page, post_path, auto_save):
     title, body_lines = parse_post(post_path)
-    write_url = f"https://blog.naver.com/{blog_id}/postwrite"
+    log(f"\n[글] {title}")
+    scope = get_editor_scope(page)
+    dismiss_draft_popup(scope, page)
+    close_help_layers(scope)
+    fill_title(page, scope, title)
+    fill_body(page, scope, body_lines)
+    page.screenshot(path=str(SHOT_PATH), full_page=True)
+    if auto_save:
+        click_save(scope, page)
+    return title
 
-    log(f"[글] {title}")
+
+def run(post_paths, blog_id, auto_save):
+    write_url = f"https://blog.naver.com/{blog_id}/postwrite"
     log(f"[블로그] {blog_id}")
+    log(f"[글 개수] {len(post_paths)}편")
     log(f"[모드] {'임시저장까지 자동' if auto_save else '입력만 (저장은 직접)'}")
 
     with sync_playwright() as p:
@@ -253,50 +265,66 @@ def run(post_path, blog_id, auto_save):
         )
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
+        done, failed = [], []
         try:
             ensure_logged_in(page, write_url)
-            log("[진행] 에디터 로딩 대기...")
-            page.wait_for_timeout(4000)
-
-            scope = get_editor_scope(page)
-            dismiss_draft_popup(scope, page)
-            close_help_layers(scope)
-            fill_title(page, scope, title)
-            fill_body(page, scope, body_lines)
-
-            page.screenshot(path=str(SHOT_PATH), full_page=True)
-            log(f"[스샷] {SHOT_PATH}")
-
-            if auto_save:
-                click_save(scope, page)
-            else:
-                log("")
-                log("=" * 56)
-                log(" 입력 완료! 브라우저에서 (사진) 자리에 사진 넣고,")
-                log(" 소제목 굵게/크게 잡은 뒤 우측 상단 [저장]을 누르세요.")
-                log("=" * 56)
+            for i, pp in enumerate(post_paths):
+                # 두 번째 글부터는 새 글쓰기 화면을 새로 연다
+                if i > 0:
+                    page.goto(write_url, wait_until="domcontentloaded")
+                log(f"[진행] ({i + 1}/{len(post_paths)}) 에디터 로딩 대기...")
+                page.wait_for_timeout(4000)
+                try:
+                    title = process_one(page, pp, auto_save)
+                    done.append(title)
+                    log(f"  ✅ 완료: {pp}")
+                except Exception as e:
+                    failed.append(pp)
+                    try:
+                        page.screenshot(path=str(SHOT_PATH), full_page=True)
+                    except Exception:
+                        pass
+                    log(f"  ⚠️ 실패: {pp} → {e}")
 
             log("")
+            log("=" * 56)
+            log(f" 총 {len(post_paths)}편 중 {len(done)}편 처리 완료")
+            if failed:
+                log(f" 실패 {len(failed)}편: {', '.join(failed)}")
+            if auto_save:
+                log(" → 네이버 '임시저장 글' 목록에서 확인하세요.")
+                log(" → 나중에 열어서 (사진) 자리에 사진 넣고 발행하면 끝!")
+            else:
+                log(" → 각 글을 확인하고 [저장]을 눌러주세요.")
+            log("=" * 56)
+            log("")
             input(">> 다 됐으면 여기서 Enter (브라우저 종료) ")
-        except Exception as e:
-            try:
-                page.screenshot(path=str(SHOT_PATH), full_page=True)
-            except Exception:
-                pass
-            log(f"[오류] {e}")
-            log(f"[스샷] 실패 화면 저장: {SHOT_PATH}")
-            input(">> 화면 확인 후 Enter 로 종료 ")
         finally:
             ctx.close()
 
 
 def main():
     ap = argparse.ArgumentParser(description="네이버 블로그 임시저장 자동화 (로컬 전용)")
-    ap.add_argument("post", help="글 파일 경로 (예: posts/속눈썹연장창업.txt)")
+    ap.add_argument("post", nargs="*", help="글 파일 경로 (여러 개 가능)")
+    ap.add_argument("--all", action="store_true", help="posts 폴더의 모든 .txt 자동 처리")
     ap.add_argument("--blog-id", required=True, help="네이버 블로그 아이디 (예: promote3404)")
     ap.add_argument("--auto-save", action="store_true", help="임시저장까지 자동")
     args = ap.parse_args()
-    run(args.post, args.blog_id, args.auto_save)
+
+    if args.all:
+        posts = [str(p) for p in sorted((ROOT / "posts").glob("*.txt"))]
+        auto_save = True
+    elif args.post:
+        posts = args.post
+        auto_save = args.auto_save or len(posts) > 1  # 여러 편이면 자동 저장
+    else:
+        ap.error("글 파일을 지정하거나 --all 을 쓰세요.")
+        return
+
+    if not posts:
+        log("[오류] 처리할 글이 없습니다.")
+        sys.exit(1)
+    run(posts, args.blog_id, auto_save)
 
 
 if __name__ == "__main__":
