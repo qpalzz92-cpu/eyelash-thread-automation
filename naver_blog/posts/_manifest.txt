@@ -1,5 +1,5 @@
-# 임시저장할 글 목록 (run.bat 이 이 목록을 보고 자동으로 받아서 저장합니다)
-# '#' 로 시작하는 줄은 무시됩니다. 새 글이 생기면 이 목록에 파일명을 추가하세요.
+# Post list for run.bat (lines starting with # are ignored)
+# Add a filename here when a new post is created.
 lash-extension-learn.txt
 lash-perm-startup.txt
 lash-perm-learn.txt
