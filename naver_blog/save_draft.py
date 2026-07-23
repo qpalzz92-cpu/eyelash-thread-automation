@@ -332,7 +332,13 @@ def run(post_paths, blog_id, auto_save, force=False):
                 log(" → 각 글을 확인하고 [저장]을 눌러주세요.")
             log("=" * 56)
             log("")
-            input(">> 다 됐으면 여기서 Enter (브라우저 종료) ")
+            if auto_save:
+                # 자동저장(일괄) 모드는 브라우저를 남겨두지 않고 바로 닫는다.
+                # (열린 크롬이 로그인 프로필을 붙잡아 다음 실행을 막는 문제 방지)
+                log(">> 브라우저를 닫습니다.")
+                page.wait_for_timeout(1500)
+            else:
+                input(">> 다 됐으면 여기서 Enter (브라우저 종료) ")
         finally:
             ctx.close()
 
