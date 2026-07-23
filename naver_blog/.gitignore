@@ -1,0 +1,7 @@
+# 로그인 세션(쿠키) — 절대 커밋 금지
+.profile/
+# 실행 스크린샷
+last_run.png
+# 파이썬 캐시
+__pycache__/
+*.pyc
