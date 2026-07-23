@@ -1,0 +1,24 @@
+# 인스타 자동 발행 순서 (매주 금요일 1개씩, 위에서부터).
+# approved: true 인 것만 발행되고, 한 번 발행되면 instagram_state.json 에 기록되어 다음 주엔 다음 주제로 넘어감.
+# 어떤 주제를 건너뛰려면 approved: false 로 바꾸면 됨.
+posts:
+  - slug: "01_upselling"          # 객단가 2배 업셀링
+    approved: true
+  - slug: "02_price-objection"    # 가격 응대
+    approved: true
+  - slug: "03_repurchase"         # 재구매 만들기
+    approved: true
+  - slug: "04_no-effect"          # 효과 없다는 고객
+    approved: true
+  - slug: "05_standalone-demand"  # 단독 수요
+    approved: true
+  - slug: "06_dm-closing"         # 비대면 클로징
+    approved: true
+  - slug: "07_review-leverage"    # 후기 활용
+    approved: true
+  - slug: "08_opening-line"       # 오프닝 멘트
+    approved: true
+  - slug: "09_gentle-delivery"    # 상태 응대
+    approved: true
+  - slug: "10_instore-3touch"     # 매장 3접점
+    approved: true

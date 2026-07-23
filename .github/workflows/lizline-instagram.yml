@@ -1,0 +1,48 @@
+name: Lizline Instagram (금요일 자동발행)
+
+# 매주 금요일, 승인된 카드뉴스 1개를 리즈라인 인스타그램에 캐러셀로 자동 발행.
+# IG_ACCESS_TOKEN / IG_USER_ID 시크릿이 설정돼 있어야 실제 발행됨(없으면 조용히 스킵).
+
+on:
+  schedule:
+    - cron: "0 11 * * 5"     # 매주 금요일 20:00 KST (11:00 UTC)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "테스트(실제 발행 없이 계획만 출력)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lizline-instagram
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests pyyaml
+      - name: 인스타그램 발행
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: python lizline-cardnews/instagram_publish.py
+      - name: 발행 이력 저장(commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lizline-cardnews/instagram_state.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경 없음."
+          else
+            git commit -m "chore: 인스타 발행 이력 반영 [skip ci]"
+            git push
+          fi
