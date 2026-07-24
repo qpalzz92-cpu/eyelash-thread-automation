@@ -87,27 +87,23 @@ def ensure_logged_in(page, write_url):
 # 에디터 위치(scope) 자동 판별: #mainFrame 안 or 최상위 페이지
 # ---------------------------------------------------------------------------
 def get_editor_scope(page):
-    """제목 영역이 실제로 존재하는 곳(iframe 또는 page)을 찾아 반환."""
-    scopes = []
-    try:
-        if page.locator("#mainFrame").count() > 0:
-            scopes.append(("iframe(#mainFrame)", page.frame_locator("#mainFrame")))
-    except Exception:
-        pass
-    scopes.append(("page(최상위)", page))
-
-    # 최대 20초간, 제목 영역이 잡히는 scope가 나올 때까지 기다림
-    for _ in range(20):
-        for name, scope in scopes:
+    """
+    제목 영역이 실제로 존재하는 프레임(Frame)을 찾아 반환.
+    Frame 객체는 locator/get_by_role/evaluate 를 모두 지원하므로,
+    이후 취소선 검사(evaluate)까지 같은 scope 로 처리할 수 있다.
+    """
+    for _ in range(25):
+        for fr in page.frames:
             try:
-                if scope.locator(".se-section-documentTitle").first.count() > 0:
-                    log(f"  · 에디터 위치 감지: {name}")
-                    return scope
+                if fr.locator(".se-section-documentTitle").count() > 0:
+                    where = "최상위" if fr == page.main_frame else "iframe"
+                    log(f"  · 에디터 위치 감지: {where}")
+                    return fr
             except Exception:
                 continue
         page.wait_for_timeout(1000)
-    log("  · [경고] 제목 영역을 못 찾음 → 최상위 페이지로 진행")
-    return page
+    log("  · [경고] 제목 영역을 못 찾음 → main_frame 사용")
+    return page.main_frame
 
 
 # ---------------------------------------------------------------------------
@@ -145,27 +141,99 @@ def close_help_layers(scope):
             pass
 
 
-def normalize_format(scope, page):
-    """
-    입력 직전, 켜져 있을 수 있는 글자 서식(취소선/굵게/기울임/밑줄)을 끈다.
-    (켜진 게 확실할 때만 눌러서, 실수로 서식을 '추가'하지 않도록 보수적으로 동작)
-    """
-    for name in ("취소선", "굵게", "기울임꼴", "기울임", "밑줄"):
+# --- 취소선(줄) 검사/제거: 실제 렌더링된 스타일 기준으로 확실하게 ---------------
+_STRIKE_CHECK_JS = r"""() => {
+  const root = document.querySelector('.se-container')
+            || document.querySelector('.se-content')
+            || document.body;
+  if (!root) return false;
+  if (root.querySelector('s, strike, del')) return true;
+  for (const el of root.querySelectorAll('*')) {
+    if (!el.textContent || !el.textContent.trim()) continue;
+    const cs = getComputedStyle(el);
+    const line = (cs.textDecorationLine || cs.textDecoration || '');
+    if (line.indexOf('line-through') !== -1) return true;
+  }
+  return false;
+}"""
+
+_STRIKE_CLICK_JS = r"""() => {
+  const cands = document.querySelectorAll(
+    "button, a[role=button], [role=button], [class*=toolbar] *");
+  for (const b of cands) {
+    const s = ((b.className || '') + ' ' +
+               (b.getAttribute && (b.getAttribute('aria-label') || '') || '') + ' ' +
+               (b.getAttribute && (b.getAttribute('title') || '') || '') + ' ' +
+               (b.getAttribute && (b.getAttribute('data-name') || '') || '') + ' ' +
+               (b.getAttribute && (b.getAttribute('data-log') || '') || '')).toLowerCase();
+    if (s.indexOf('strike') !== -1 || s.indexOf('취소선') !== -1) {
+      b.click();
+      return true;
+    }
+  }
+  return false;
+}"""
+
+
+def has_strikethrough(scope):
+    try:
+        return bool(scope.evaluate(_STRIKE_CHECK_JS))
+    except Exception:
+        return False
+
+
+def click_strike_button(scope):
+    # 1) JS로 툴바의 취소선 버튼을 찾아 클릭 (가장 폭넓음)
+    try:
+        if scope.evaluate(_STRIKE_CLICK_JS):
+            return True
+    except Exception:
+        pass
+    # 2) Playwright 셀렉터 백업
+    for finder in (
+        lambda: scope.get_by_role("button", name="취소선"),
+        lambda: scope.locator("button[data-name='strikethrough']"),
+        lambda: scope.locator("button.se-toolbar-item-strikethrough"),
+        lambda: scope.locator("button[title*='취소선']"),
+    ):
         try:
-            btn = scope.get_by_role("button", name=name).first
-            if btn.count() == 0:
-                continue
-            pressed = (btn.get_attribute("aria-pressed") or "")
-            cls = (btn.get_attribute("class") or "")
-            active = pressed == "true" or any(
-                k in cls for k in ("se-is-selected", "-active", "active", "selected")
-            )
-            if active:
-                btn.click()
-                page.wait_for_timeout(150)
-                log(f"  · 서식 끔: {name}")
+            b = finder().first
+            if b.count() > 0:
+                b.click(timeout=1500)
+                return True
         except Exception:
             continue
+    return False
+
+
+def ensure_no_strikethrough(scope, page):
+    """본문에 취소선이 남아있으면 없어질 때까지 제거한다(최대 5회)."""
+    for _ in range(5):
+        # 본문에 포커스 후 전체 선택
+        for sel in (".se-section-text .se-text-paragraph", ".se-section-text"):
+            try:
+                scope.locator(sel).first.click(timeout=2000)
+                break
+            except Exception:
+                continue
+        page.keyboard.press("Control+a")
+        page.wait_for_timeout(150)
+
+        if not has_strikethrough(scope):
+            log("  · 취소선 없음 확인")
+            page.keyboard.press("ArrowDown")
+            return True
+
+        if not click_strike_button(scope):
+            log("  · [경고] 취소선 버튼을 못 찾음")
+            break
+        page.wait_for_timeout(350)
+
+    page.keyboard.press("ArrowDown")
+    remain = has_strikethrough(scope)
+    if remain:
+        log("  · [경고] 취소선이 남아있을 수 있음")
+    return not remain
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +252,6 @@ def fill_title(page, scope, title):
         for sel in selectors:
             try:
                 scope.locator(sel).first.click(timeout=3000)
-                normalize_format(scope, page)
                 page.keyboard.insert_text(title)
                 log("  · 제목 입력 완료")
                 return
@@ -219,9 +286,6 @@ def fill_body(page, scope, lines):
         dismiss_draft_popup(scope, page, total_wait_ms=4000)
     if not clicked:
         raise RuntimeError("본문 입력 영역을 찾지 못했습니다.")
-
-    # 입력 직전 서식(취소선 등) 끄기 → 본문에 줄 안 생기게
-    normalize_format(scope, page)
 
     first = True
     for line in lines:
@@ -262,6 +326,7 @@ def process_one(page, post_path, auto_save):
     close_help_layers(scope)
     fill_title(page, scope, title)
     fill_body(page, scope, body_lines)
+    ensure_no_strikethrough(scope, page)   # 취소선 있으면 없어질 때까지 제거
     page.screenshot(path=str(SHOT_PATH), full_page=True)
     if auto_save:
         click_save(scope, page)
