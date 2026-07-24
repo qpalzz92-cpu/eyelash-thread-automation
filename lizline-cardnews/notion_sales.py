@@ -88,7 +88,7 @@ def md_to_blocks(md):
         if not text:
             return
         blocks.append({"object": "block", "type": "paragraph",
-                       "paragraph": {"rich_text": rt(wrap(text))}})
+                       "paragraph": {"rich_text": rt(text)}})
 
     i = 0
     while i < len(lines):
@@ -116,7 +116,7 @@ def md_to_blocks(md):
             while i < len(lines) and lines[i].strip():
                 buf.append(lines[i].rstrip()); i += 1
             blocks.append({"object": "block", "type": "callout",
-                           "callout": {"rich_text": rt(wrap("\n".join(buf))),
+                           "callout": {"rich_text": rt("\n".join(buf)),
                                        "icon": {"type": "emoji", "emoji": "💬"},
                                        "color": "blue_background"}})
             continue
