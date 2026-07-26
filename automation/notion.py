@@ -331,12 +331,12 @@ def query_approved(dbid):
 
 
 KST = datetime.timezone(datetime.timedelta(hours=9))
-SLOT_HOURS = [13, 21]  # 하루 발행 슬롯: 오후 1시 · 오후 9시 (KST)
+SLOT_HOURS = [21]  # 하루 발행 슬롯: 오후 9시 (KST) — 하루 1개
 
 
 def free_slots(queue_data):
     """이미 큐에 잡힌 시간과 과거 시간은 건너뛰고,
-    하루 2개(13시·21시 KST) 빈 슬롯을 이른 순서대로 무한히 내주는 제너레이터."""
+    하루 1개(21시 KST) 빈 슬롯을 이른 순서대로 무한히 내주는 제너레이터."""
     used = set()
     for p in queue_data.get("posts", []):
         s = p.get("scheduled_at")
