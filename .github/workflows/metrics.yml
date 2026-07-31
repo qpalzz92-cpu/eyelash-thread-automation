@@ -1,0 +1,91 @@
+name: Collect Threads Metrics
+
+# 발행된 글의 지표(조회수/좋아요/댓글/리포스트/인용/공유)를 매일 수집해
+# metrics.jsonl 에 누적한다. 이 데이터로 '반응 좋았던 주제/훅'을 판단해
+# 다음 콘텐츠 생성 방향을 잡는다. (저장 지표는 Threads API 미제공)
+
+on:
+  schedule:
+    - cron: "0 13 * * *"    # 매일 밤 10시 KST (발행 뒤 하루 반응 반영)
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests pyyaml
+
+      - name: 지표 수집
+        env:
+          THREADS_ACCESS_TOKEN_ROA: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_ACCESS_TOKEN_BEALIZ: ${{ secrets.THREADS_ACCESS_TOKEN_BEALIZ }}
+        run: |
+          python - <<'PY'
+          import os, json, datetime, yaml, requests
+          API = "https://graph.threads.net/v1.0"
+          METRICS = ["views", "likes", "replies", "reposts", "quotes", "shares"]
+          today = datetime.date.today().isoformat()
+
+          accounts = [
+              ("roa",    os.environ["THREADS_ACCESS_TOKEN_ROA"],    "automation/state.json", "automation/queue.yaml", "automation/metrics.jsonl"),
+              ("bealiz", os.environ["THREADS_ACCESS_TOKEN_BEALIZ"], "bealiz/state.json",     "bealiz/queue.yaml",     "bealiz/metrics.jsonl"),
+          ]
+
+          for acct, token, statep, queuep, outp in accounts:
+              try:
+                  st = json.load(open(statep, encoding="utf-8"))
+              except Exception:
+                  continue
+              # qid -> title 맵
+              titles = {}
+              try:
+                  q = yaml.safe_load(open(queuep, encoding="utf-8")) or {}
+                  for p in q.get("posts", []):
+                      titles[p["id"]] = p.get("title", "")
+              except Exception:
+                  pass
+
+              rows = []
+              for qid, v in st.get("posted", {}).items():
+                  mid = v.get("thread_post_id")
+                  if not mid:
+                      continue
+                  vals = {}
+                  for m in METRICS:
+                      r = requests.get(f"{API}/{mid}/insights",
+                                       params={"metric": m, "access_token": token}, timeout=30)
+                      if r.status_code == 200:
+                          data = r.json().get("data", [])
+                          if data:
+                              tv = data[0].get("total_value") or {}
+                              vals[m] = tv.get("value")
+                  rows.append({
+                      "date": today, "account": acct, "qid": qid,
+                      "title": titles.get(qid, ""), "media_id": mid, **vals,
+                  })
+
+              with open(outp, "a", encoding="utf-8") as f:
+                  for row in rows:
+                      f.write(json.dumps(row, ensure_ascii=False) + "\n")
+              print(f"[{acct}] {len(rows)}건 지표 기록")
+          PY
+
+      - name: 기록 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          touch automation/metrics.jsonl bealiz/metrics.jsonl
+          git add automation/metrics.jsonl bealiz/metrics.jsonl
+          if git diff --cached --quiet; then
+            echo "새 지표 없음"
+          else
+            git commit -m "chore: threads 지표 수집 [skip ci]"
+            for i in 1 2 3 4 5; do
+              if git push; then break; fi
+              echo "push 충돌 → rebase 재시도 ($i)"; git fetch origin main; git rebase origin/main
+            done
+          fi
