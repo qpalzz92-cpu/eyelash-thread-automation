@@ -1,0 +1,50 @@
+name: Notion Auto Push
+
+# candidates.yaml 이 main 에 push 되면 자동으로 노션 게시판에 후보를 올린다.
+# (기존 notion-push.yml 은 수동 실행만 되어서, 자동 생성된 후보가 노션에 안 올라가는 구멍이 있었음 → 이 워크플로가 그 구멍을 메움)
+# 로아(automation/) · 비올리즈(bealiz/) 둘 다 처리. 새 후보(state.json 에 없는 key)만 올라감.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - automation/candidates.yaml
+      - bealiz/candidates.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-autopush
+  cancel-in-progress: false
+
+jobs:
+  autopush:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r automation/requirements.txt
+      - name: 로아 후보 노션에 올리기
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python automation/notion.py push
+      - name: 비올리즈 후보 노션에 올리기
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python bealiz/notion.py push
+      - name: 변경사항 저장(commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add automation/notion_config.json automation/state.json bealiz/notion_config.json bealiz/state.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "변경사항 없음."
+          else
+            git commit -m "chore: 노션 자동 push 상태 반영 [skip ci]"
+            git pull --rebase origin main || true
+            git push
+          fi
