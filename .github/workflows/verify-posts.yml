@@ -7,6 +7,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
       - name: 파이썬 설정
         uses: actions/setup-python@v5
         with:
@@ -15,44 +18,70 @@ jobs:
       - name: 의존성 설치
         run: pip install requests
 
-      - name: 토큰 진단
+      - name: 인사이트(지표) 조회
         env:
           THREADS_ACCESS_TOKEN_ROA: ${{ secrets.THREADS_ACCESS_TOKEN }}
           THREADS_ACCESS_TOKEN_BEALIZ: ${{ secrets.THREADS_ACCESS_TOKEN_BEALIZ }}
         run: |
           python - <<'PY'
-          import os, requests
-          API = "https://graph.threads.net"
+          import os, json, requests
+          API = "https://graph.threads.net/v1.0"
+
+          # 각 계정 state.json 에서 발행된 media id 목록 뽑기
+          def posted_ids(path):
+              try:
+                  d = json.load(open(path, encoding="utf-8"))
+              except Exception:
+                  return []
+              out = []
+              for k, v in d.get("posted", {}).items():
+                  mid = v.get("thread_post_id")
+                  if mid:
+                      out.append((k, mid))
+              return out
+
+          # 개별 지표를 하나씩 찔러 지원 여부 확인 (하나가 안 돼도 나머지 확인되게)
+          PROBE = ["views", "likes", "replies", "reposts", "quotes", "shares", "saves", "saved", "bookmarks"]
 
           checks = [
-              ("로아",     os.environ.get("THREADS_ACCESS_TOKEN_ROA", "")),
-              ("비올리즈", os.environ.get("THREADS_ACCESS_TOKEN_BEALIZ", "")),
+              ("로아",     os.environ["THREADS_ACCESS_TOKEN_ROA"],    "automation/state.json"),
+              ("비올리즈", os.environ["THREADS_ACCESS_TOKEN_BEALIZ"], "bealiz/state.json"),
           ]
 
-          for label, token in checks:
-              print("=" * 55)
-              tok_len = len(token)
-              print(f"[{label}] 토큰 길이={tok_len} (0이면 Secret 비어있음)")
-              if not token:
+          for label, token, statepath in checks:
+              print("=" * 60)
+              print(f"[{label}]")
+              ids = posted_ids(statepath)
+              if not ids:
+                  print("  발행된 글 없음")
                   continue
+              key, mid = ids[-1]  # 가장 최근 글 1개로 지표 지원 여부 확인
+              print(f"  대상 글: {key} (media_id={mid})")
 
-              # 1) 기본 호출
-              me = requests.get(f"{API}/v1.0/me", params={"fields": "id,username", "access_token": token}, timeout=30)
-              print("  /me:", me.status_code, me.text[:250])
+              supported, unsupported = {}, []
+              for m in PROBE:
+                  r = requests.get(f"{API}/{mid}/insights",
+                                   params={"metric": m, "access_token": token}, timeout=30)
+                  if r.status_code == 200:
+                      data = r.json().get("data", [])
+                      val = None
+                      if data:
+                          tv = data[0].get("total_value") or {}
+                          val = tv.get("value")
+                          if val is None and data[0].get("values"):
+                              val = data[0]["values"][0].get("value")
+                      supported[m] = val
+                  else:
+                      unsupported.append(m)
+              print("  ✅ 지원되는 지표:", json.dumps(supported, ensure_ascii=False))
+              print("  ❌ 미지원/거부 지표:", unsupported)
 
-              # 2) 토큰 디버그 (유효성/권한/만료시각)
-              dbg = requests.get(f"{API}/debug_token", params={"input_token": token, "access_token": token}, timeout=30)
-              print("  debug_token:", dbg.status_code, dbg.text[:400])
-
-              # 3) 장기 토큰 리프레시 시도 (토큰값은 출력 안 함, 상태/만료만)
-              rf = requests.get(f"{API}/refresh_access_token",
-                                params={"grant_type": "th_refresh_token", "access_token": token}, timeout=30)
-              try:
-                  j = rf.json()
-              except Exception:
-                  j = {}
-              if "access_token" in j:
-                  print("  refresh: OK — 리프레시 가능, expires_in(초)=", j.get("expires_in"))
-              else:
-                  print("  refresh:", rf.status_code, rf.text[:300])
+              # 계정 전체(팔로워 등) 지표도 확인
+              me = requests.get(f"{API}/me", params={"fields": "id", "access_token": token}, timeout=30)
+              uid = me.json().get("id")
+              if uid:
+                  ui = requests.get(f"{API}/{uid}/threads_insights",
+                                    params={"metric": "views,likes,replies,reposts,quotes,followers_count",
+                                            "access_token": token}, timeout=30)
+                  print("  계정 전체 지표:", ui.status_code, ui.text[:400])
           PY
