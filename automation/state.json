@@ -97,7 +97,22 @@
     "membership-info",
     "burnout-story",
     "burnout-data",
-    "burnout-info"
+    "burnout-info",
+    "price-story",
+    "price-real",
+    "price-info",
+    "staff-story",
+    "staff-real",
+    "staff-info",
+    "time-story",
+    "time-real",
+    "time-info",
+    "return-story",
+    "return-real",
+    "return-info",
+    "money-story",
+    "money-real",
+    "money-info"
   ],
   "notion_synced": [
     "3a4f83fe-90bd-8167-ad4e-dbf7f77e5c2a",

@@ -61,7 +61,22 @@
     "growth-info",
     "photo-story",
     "photo-real",
-    "photo-info"
+    "photo-info",
+    "price-story",
+    "price-real",
+    "price-info",
+    "return-story",
+    "return-real",
+    "return-info",
+    "slump-story",
+    "slump-real",
+    "slump-info",
+    "solo-story",
+    "solo-real",
+    "solo-info",
+    "edu-story",
+    "edu-real",
+    "edu-info"
   ],
   "notion_synced": [
     "3a4f83fe-90bd-81f3-a5ba-f96a5147426b",
