@@ -75,7 +75,7 @@ TOPICS = [
          "note":"재구매 ‘타이밍’을 안 심어서예요.<br>고객은 다 쓴 것도 잊어버립니다.",
          "lead":"판매 시점에 <span class=\"blue\">다음 구매를 예약</span>시켜야 합니다.",
          "tag":"# 재구매 설계"},
-        {"type":"point","badge":"핵심 포인트","title":"다 쓸 때쯤을 <span class=\"hl\">미리 알려줘라</span>",
+        {"type":"point","badge":"핵심 포인트","title":"다 쓸 때쯤을<br><span class=\"hl\">미리 알려줘라</span>",
          "note":"제품을 건네며 ‘언제 떨어지는지 + 그때 뭘 할지’를 함께 각인시키세요.",
          "duo":[("사용 주기 안내","기억에 남음"),("리터치와 겹치기","방문=재구매")],
          "punch":"잊기 전에 <span class=\"blue\">먼저</span> 말하세요"},
