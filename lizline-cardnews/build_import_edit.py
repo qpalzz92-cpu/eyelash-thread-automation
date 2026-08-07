@@ -7,12 +7,13 @@ from content import TOPICS
 # 폰트 base64(@font-face)는 편집본엔 불필요 → 제거해서 파일을 가볍게
 CSS = re.sub(r"@font-face\{[^}]*\}", "", g.CSS)
 
-# 편집본 전용: 인라인 강조(.hl)를 '파란 박스'가 아니라 '파란 글씨'로.
-# 박스는 글자와 분리된 별개 조각이라 캔바 편집기에서 글자가 재배치되면 틀이 어긋난다.
-# 파란 글씨는 글자 자체의 속성이라 절대 틀어지지 않고, 그대로 편집 가능하다.
-# (인스타 자동발행용 PNG는 generate.py의 박스 스타일을 그대로 사용 — 여긴 손대지 않음)
-CSS += ("\n.hl{background:transparent!important;color:#2563EB!important;"
-        "padding:0!important;border-radius:0!important;font-weight:800!important}")
+# 편집본 전용: 인라인 강조(.hl)를 '형광펜(글자 배경 하이라이트)'으로.
+# padding/border-radius/box-decoration 같은 박스성 속성을 빼면, Canva가 이것을
+# 별개 도형이 아니라 '글자 런(run)의 배경색'으로 임포트한다 → 글자를 따라다녀 안 틀어짐.
+# (인스타 자동발행용 PNG는 generate.py의 둥근 박스 스타일 그대로 — 여긴 손대지 않음)
+CSS += ("\n.hl{background:#2563EB!important;color:#ffffff!important;"
+        "padding:0!important;border-radius:0!important;"
+        "-webkit-box-decoration-break:clone!important;box-decoration-break:clone!important}")
 
 os.makedirs("canva", exist_ok=True)
 only = int(sys.argv[1]) if len(sys.argv) > 1 else None
