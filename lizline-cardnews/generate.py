@@ -70,7 +70,7 @@ html,body{width:1080px;height:1350px}
 .dots{display:flex;gap:12px;align-items:center}
 .dot{width:16px;height:16px;border-radius:50%;background:#D8E1F0}
 .dot.on{width:46px;background:#2563EB}
-.handle{border:2.5px solid #2563EB;color:#2563EB;font-weight:800;font-size:33px;padding:13px 32px;border-radius:999px}
+.handle{border:2.5px solid #2563EB;color:#2563EB;font-weight:800;font-size:33px;padding:13px 32px;border-radius:999px;text-align:center}
 """
 
 _TOTAL = 8  # 주제별 카드 수(런타임에 build_topic에서 설정)
