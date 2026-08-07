@@ -11,6 +11,7 @@ on:
     paths:
       - "lizline-cardnews/detailed/**"
       - "lizline-cardnews/notion_sales.py"
+      - "lizline-cardnews/canva_links.json"
   workflow_dispatch:
 
 permissions:
