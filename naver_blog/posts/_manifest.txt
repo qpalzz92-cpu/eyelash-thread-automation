@@ -1,7 +1,12 @@
 # Post list for run.bat (lines starting with # are ignored)
 # Add a filename here when a new post is created.
-lash-extension-learn.txt
-lash-perm-startup.txt
-lash-perm-learn.txt
-gangnam-academy.txt
-lash-learn-review.txt
+g01-lash-beginner.txt
+g02-lash-unlimited.txt
+g03-lash-beyond-classic.txt
+g04-lash-consult.txt
+g05-lash-photo.txt
+g06-perm-beginner.txt
+g07-perm-rod.txt
+g08-perm-basics.txt
+g09-perm-consult.txt
+g10-perm-tech-plus.txt
