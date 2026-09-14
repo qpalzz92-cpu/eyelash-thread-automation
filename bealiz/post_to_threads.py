@@ -18,6 +18,7 @@
   REPLY_DELAY=5        : 본문 게시 후 댓글까지 대기(초)
 """
 import os
+import re
 import sys
 import json
 import time
@@ -26,6 +27,18 @@ import pathlib
 
 import yaml
 import requests
+
+# 카드뉴스: 댓글(reply) 안의 '---' 한 줄을 카드 구분선으로 보고 여러 답글로 나눈다.
+CARD_DELIM = re.compile(r"(?m)^\s*---\s*$")
+
+
+def split_cards(reply):
+    """reply 텍스트를 '---' 구분선 기준으로 카드 리스트로 나눈다.
+    구분선이 없으면 [전체] 한 개 → 기존(댓글 1개) 동작과 동일."""
+    if not reply or not reply.strip():
+        return []
+    parts = [p.strip() for p in CARD_DELIM.split(reply)]
+    return [p for p in parts if p]
 
 API = "https://graph.threads.net/v1.0"
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -153,32 +166,37 @@ def main():
             break
         pid = post["id"]
         title = post.get("title", "")
-        body = (post.get("body") or "").rstrip()
+        body = (post.get("body") or "").rstrip()   # 표지(첫 글)
         reply = (post.get("reply") or "").rstrip()
+        cards = split_cards(reply)                  # 카드 2·3·4… (답글 체인)
         log(f"[발행 대상] {pid} — {title}")
 
         if dry_run:
-            log("  (DRY_RUN) 본문 미리보기:")
+            log("  (DRY_RUN) 표지(본문):")
             log("  " + body.replace("\n", "\n  "))
-            if reply:
-                log("  (DRY_RUN) 댓글:")
-                log("  " + reply.replace("\n", "\n  "))
+            for i, card in enumerate(cards, start=2):
+                log(f"  (DRY_RUN) 카드 {i}:")
+                log("  " + card.replace("\n", "\n  "))
             state["posted"][pid] = {"dry_run": True, "at": now_utc().isoformat()}
             published += 1
             continue
 
         media_id = post_text(user_id, token, body, publish_delay=publish_delay)
-        reply_id = None
-        if reply:
+        # 카드들을 앞 게시물에 이어 답글로 단다(체인) → 스레드가 카드뉴스처럼 이어짐
+        reply_ids = []
+        prev_id = media_id
+        for card in cards:
             time.sleep(reply_delay)
-            reply_id = post_text(user_id, token, reply, reply_to_id=media_id,
-                                 publish_delay=publish_delay)
+            cid = post_text(user_id, token, card, reply_to_id=prev_id,
+                            publish_delay=publish_delay)
+            reply_ids.append(cid)
+            prev_id = cid
         state["posted"][pid] = {
             "posted_at": now_utc().isoformat(),
             "thread_post_id": media_id,
-            "reply_id": reply_id,
+            "reply_ids": reply_ids,
         }
-        log(f"  완료 → post_id={media_id}" + (f", reply_id={reply_id}" if reply_id else ""))
+        log(f"  완료 → post_id={media_id}, 카드 {len(reply_ids)}개")
         published += 1
 
     save_state(state)
