@@ -312,7 +312,10 @@
     "collab-info",
     "signature-story",
     "signature-real",
-    "signature-info"
+    "signature-info",
+    "sales-story",
+    "sales-real",
+    "sales-info"
   ],
   "notion_synced": [
     "3a4f83fe-90bd-8167-ad4e-dbf7f77e5c2a",

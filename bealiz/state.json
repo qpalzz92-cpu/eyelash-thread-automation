@@ -256,7 +256,13 @@
     "apply-b-info",
     "testimonial-b-story",
     "testimonial-b-real",
-    "testimonial-b-info"
+    "testimonial-b-info",
+    "overload-story",
+    "overload-real",
+    "overload-info",
+    "selfcheck-story",
+    "selfcheck-real",
+    "selfcheck-info"
   ],
   "notion_synced": [
     "3a4f83fe-90bd-81f3-a5ba-f96a5147426b",
