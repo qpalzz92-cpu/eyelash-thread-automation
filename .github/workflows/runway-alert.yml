@@ -1,0 +1,35 @@
+name: Runway Alert (재고 부족 알림)
+
+# 발행 재고(큐에 아직 안 나간 승인 글)가 부족하면 노션 게시판에 '⚠️ 재고 알림' 카드를 띄운다.
+# 2일 간격 발행 기준 3개(약 6일치) 이하면 알림, 충분해지면 알림 카드 자동 제거.
+# 로아 · 비올리즈 각각 자기 게시판에 알림.
+
+on:
+  schedule:
+    - cron: "0 0 * * *"     # 매일 오전 9시 KST (00:00 UTC) — 저녁 발행 전에 미리 알림
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runway-alert
+  cancel-in-progress: false
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r automation/requirements.txt
+      - name: 로아 재고 점검·알림
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python automation/notion.py alert
+      - name: 비올리즈 재고 점검·알림
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python bealiz/notion.py alert

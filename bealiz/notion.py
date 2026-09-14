@@ -453,6 +453,49 @@ def sync():
         log("동기화할 승인 글이 없습니다.")
 
 
+ALERT_PREFIX = "⚠️ [재고 알림]"
+
+
+def set_title(page_id, title):
+    r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
+                       json={"properties": {"제목": {"title": rt(title)}}}, timeout=30)
+    if not r.ok:
+        raise RuntimeError(f"제목 변경 실패 {r.status_code}: {r.text}")
+
+
+def alert(threshold_posts=3):
+    """발행 재고(큐에 아직 안 나간 승인 글)가 threshold 이하면 노션에 알림 카드를 띄운다.
+    재고가 충분해지면 기존 알림 카드를 자동 보관(제거)한다.
+    (2일 간격 발행 기준: 3개 = 약 6일치)"""
+    cfg = load_json(CONFIG, {})
+    dbid = cfg.get("database_id")
+    if not dbid:
+        log("게시판(DB) 없음.")
+        return
+    data = yaml.safe_load(open(QUEUE, encoding="utf-8")) if QUEUE.exists() else {}
+    posts = (data or {}).get("posts", []) or []
+    posted = load_json(STATE, {"posted": {}}).get("posted", {})
+    remaining = sum(1 for p in posts if p.get("id") and p["id"] not in posted)
+    days = remaining * SLOT_INTERVAL_DAYS
+    rows = query_all(dbid)
+    existing = [r for r in rows if plain(r["properties"].get("제목")).startswith(ALERT_PREFIX)]
+    if remaining <= threshold_posts:
+        title = f"{ALERT_PREFIX} 발행 재고 {remaining}개(약 {days}일치)만 남음 - 후보를 '승인'해 채워주세요"
+        note = ("발행 대기(승인) 글이 부족합니다. 후보 중 마음에 드는 글의 상태를 '승인'으로 "
+                "바꾸면 자동으로 큐에 채워지고 발행이 이어집니다.")
+        if existing:
+            set_title(existing[0]["id"], title)
+            for extra in existing[1:]:
+                archive_row(extra["id"])
+        else:
+            add_row(dbid, {"title": title, "topic": note, "recommended": True})
+        log(f"⚠️ 재고 부족: {remaining}개(약 {days}일치). 알림 카드 게시.")
+    else:
+        for r in existing:
+            archive_row(r["id"])
+        log(f"재고 충분: {remaining}개(약 {days}일치). 알림 없음.")
+
+
 def main():
     if not TOKEN:
         log("ERROR: NOTION_TOKEN 이 설정되지 않았습니다.")
@@ -472,12 +515,14 @@ def main():
         rebuild(keep_prefixes=())
     elif mode == "cleanup":
         cleanup_published()
+    elif mode == "alert":
+        alert()
     elif mode == "all":
         setup()
         push()
         sync()
     else:
-        log(f"알 수 없는 mode: {mode} (setup/push/sync/all)")
+        log(f"알 수 없는 mode: {mode} (setup/push/sync/resync/cleanup/alert/all)")
         sys.exit(1)
 
 
