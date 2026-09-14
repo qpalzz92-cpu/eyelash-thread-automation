@@ -13,6 +13,7 @@
 import os
 import sys
 import json
+import time
 import datetime
 import pathlib
 
@@ -197,10 +198,18 @@ def update_row(page_id, c):
     }
     if c.get("variant"):
         props["유형"] = {"select": {"name": c["variant"]}}
-    r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
-                       json={"properties": props}, timeout=30)
-    if not r.ok:
-        raise RuntimeError(f"행 수정 실패 {r.status_code}: {r.text}")
+    for _ in range(6):
+        r = requests.patch(f"{API}/pages/{page_id}", headers=HEADERS,
+                           json={"properties": props}, timeout=30)
+        if r.status_code == 429:
+            wait = int(r.headers.get("Retry-After") or 5)
+            log(f"  요청 제한(429), {wait}s 대기 후 재시도")
+            time.sleep(wait + 1)
+            continue
+        if not r.ok:
+            raise RuntimeError(f"행 수정 실패 {r.status_code}: {r.text}")
+        return
+    raise RuntimeError("행 수정 실패: 요청 제한 재시도 초과")
 
 
 def archive_row(page_id):
