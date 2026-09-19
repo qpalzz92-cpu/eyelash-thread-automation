@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 title Naver Blog Auto Draft
 set "BASE=https://github.com/qpalzz92-cpu/eyelash-thread-automation/raw/refs/heads/claude/naver-blog-automation-4rj504/naver_blog"
-set "BLOGID=promote3404"
+set "BLOGID=bealiz__"
 
 echo ============================================
 echo    Naver Blog - Auto Temp Save

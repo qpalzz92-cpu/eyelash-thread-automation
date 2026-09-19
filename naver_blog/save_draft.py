@@ -64,23 +64,49 @@ def parse_post(path):
 
 
 # ---------------------------------------------------------------------------
-# 로그인 보장
+# 로그인 보장 + 로그인된 블로그 아이디 자동 감지
 # ---------------------------------------------------------------------------
-def ensure_logged_in(page, write_url):
-    page.goto(write_url, wait_until="domcontentloaded")
-    if "nid.naver.com" not in page.url:
-        return
-    log("")
-    log("=" * 56)
-    log(" [로그인 필요] 열린 브라우저에서 네이버에 직접 로그인하세요.")
-    log(" (최초 1회만. 다음부터 자동 로그인)")
-    log("=" * 56)
-    for _ in range(300):
-        if "nid.naver.com" not in page.url:
-            break
+import re
+
+MYBLOG_URL = "https://blog.naver.com/MyBlog.naver"
+
+
+def _extract_blog_id(url):
+    m = re.search(r"blog\.naver\.com/([A-Za-z0-9_-]+)", url or "")
+    if not m:
+        return None
+    bid = m.group(1)
+    if bid.lower() in ("myblog.naver", "myblog", "postwrite", "goblogwrite.naver"):
+        return None
+    return bid
+
+
+def login_and_get_blog_id(page, fallback):
+    """
+    네이버 로그인을 보장하고, '지금 로그인된 블로그'의 아이디를 자동으로 알아낸다.
+    (설정값과 로그인 계정이 달라도, 실제 로그인된 블로그에 저장되도록)
+    """
+    page.goto(MYBLOG_URL, wait_until="domcontentloaded")
+    if "nid.naver.com" in page.url:
+        log("")
+        log("=" * 56)
+        log(" [로그인 필요] 열린 브라우저에서 네이버에 직접 로그인하세요.")
+        log(" (최초 1회만. 다음부터 자동 로그인)")
+        log("=" * 56)
+        for _ in range(300):
+            if "nid.naver.com" not in page.url:
+                break
+            page.wait_for_timeout(2000)
         page.wait_for_timeout(2000)
-    page.wait_for_timeout(2000)
-    page.goto(write_url, wait_until="domcontentloaded")
+        page.goto(MYBLOG_URL, wait_until="domcontentloaded")
+
+    page.wait_for_timeout(1500)
+    detected = _extract_blog_id(page.url)
+    if detected:
+        log(f"  · 로그인된 블로그 자동 감지: {detected}")
+        return detected
+    log(f"  · 블로그 자동 감지 실패 → 설정값 사용: {fallback}")
+    return fallback
 
 
 # ---------------------------------------------------------------------------
@@ -334,8 +360,6 @@ def process_one(page, post_path, auto_save):
 
 
 def run(post_paths, blog_id, auto_save, force=False):
-    write_url = f"https://blog.naver.com/{blog_id}/postwrite"
-
     # 자동 저장 모드면, 이미 저장한 글은 건너뛴다(중복 방지). --force 면 무시.
     if auto_save and not force:
         saved = load_saved()
@@ -349,7 +373,6 @@ def run(post_paths, blog_id, auto_save, force=False):
         log("[안내] 새로 저장할 글이 없습니다. (모두 이미 저장됨)")
         return
 
-    log(f"[블로그] {blog_id}")
     log(f"[글 개수] {len(post_paths)}편")
     log(f"[모드] {'임시저장까지 자동' if auto_save else '입력만 (저장은 직접)'}")
 
@@ -364,11 +387,13 @@ def run(post_paths, blog_id, auto_save, force=False):
 
         done, failed = [], []
         try:
-            ensure_logged_in(page, write_url)
+            # 로그인 보장 + 로그인된 블로그 자동 감지 (계정 불일치 방지)
+            actual_id = login_and_get_blog_id(page, blog_id)
+            write_url = f"https://blog.naver.com/{actual_id}/postwrite"
+            log(f"[저장 대상 블로그] {actual_id}")
             for i, pp in enumerate(post_paths):
-                # 두 번째 글부터는 새 글쓰기 화면을 새로 연다
-                if i > 0:
-                    page.goto(write_url, wait_until="domcontentloaded")
+                # 매 글마다 새 글쓰기 화면을 새로 연다
+                page.goto(write_url, wait_until="domcontentloaded")
                 log(f"[진행] ({i + 1}/{len(post_paths)}) 에디터 로딩 대기...")
                 page.wait_for_timeout(4000)
                 try:
