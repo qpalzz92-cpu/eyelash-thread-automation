@@ -81,11 +81,19 @@ def _extract_blog_id(url):
     return bid
 
 
-def login_and_get_blog_id(page, fallback):
+def login_and_get_blog_id(page, fallback, switch_account=False):
     """
     네이버 로그인을 보장하고, '지금 로그인된 블로그'의 아이디를 자동으로 알아낸다.
-    (설정값과 로그인 계정이 달라도, 실제 로그인된 블로그에 저장되도록)
+    switch_account=True 면 먼저 로그아웃해서, 원하는 다른 계정으로 새로 로그인하게 한다.
     """
+    if switch_account:
+        try:
+            page.goto("https://nid.naver.com/nidlogin.logout", wait_until="domcontentloaded")
+            page.wait_for_timeout(2000)
+            log("  · 계정 전환 모드: 로그아웃 완료 → 원하는 계정으로 로그인하세요")
+        except Exception:
+            pass
+
     page.goto(MYBLOG_URL, wait_until="domcontentloaded")
     if "nid.naver.com" in page.url:
         log("")
@@ -359,7 +367,7 @@ def process_one(page, post_path, auto_save):
     return title
 
 
-def run(post_paths, blog_id, auto_save, force=False):
+def run(post_paths, blog_id, auto_save, force=False, switch_account=False):
     # 자동 저장 모드면, 이미 저장한 글은 건너뛴다(중복 방지). --force 면 무시.
     if auto_save and not force:
         saved = load_saved()
@@ -388,7 +396,7 @@ def run(post_paths, blog_id, auto_save, force=False):
         done, failed = [], []
         try:
             # 로그인 보장 + 로그인된 블로그 자동 감지 (계정 불일치 방지)
-            actual_id = login_and_get_blog_id(page, blog_id)
+            actual_id = login_and_get_blog_id(page, blog_id, switch_account=switch_account)
             write_url = f"https://blog.naver.com/{actual_id}/postwrite"
             log(f"[저장 대상 블로그] {actual_id}")
             for i, pp in enumerate(post_paths):
@@ -440,6 +448,8 @@ def main():
     ap.add_argument("--blog-id", required=True, help="네이버 블로그 아이디 (예: promote3404)")
     ap.add_argument("--auto-save", action="store_true", help="임시저장까지 자동")
     ap.add_argument("--force", action="store_true", help="이미 저장한 글도 다시 저장")
+    ap.add_argument("--switch-account", action="store_true",
+                    help="먼저 로그아웃해 다른 계정으로 로그인(계정 전환)")
     args = ap.parse_args()
 
     if args.all:
@@ -457,7 +467,7 @@ def main():
     if not posts:
         log("[오류] 처리할 글이 없습니다.")
         sys.exit(1)
-    run(posts, args.blog_id, auto_save, force=args.force)
+    run(posts, args.blog_id, auto_save, force=args.force, switch_account=args.switch_account)
 
 
 if __name__ == "__main__":

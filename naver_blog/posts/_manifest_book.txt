@@ -1,0 +1,11 @@
+# Book promo post list for book-promo.bat (lines starting with # are ignored)
+b01-profit.txt
+b02-consult.txt
+b03-return.txt
+b04-complaint.txt
+b05-idletime.txt
+b06-system.txt
+b07-staff.txt
+b08-rules.txt
+b09-referral.txt
+b10-closing.txt
