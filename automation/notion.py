@@ -368,7 +368,7 @@ def free_slots(queue_data):
 
 
 def block(text):
-    return "\n".join("      " + ln if ln else "" for ln in text.rstrip("\n").split("\n"))
+    return "\n".join("    " + ln if ln else "" for ln in text.rstrip("\n").split("\n"))
 
 
 def record_learning(title, draft_body, draft_reply, final_body, final_reply):
@@ -428,14 +428,14 @@ def sync():
             sched = next(slots).isoformat()
         qid = qid_for(pid)
 
-        entry = [f"  - id: {qid}",
-                 f'    title: "{title[:60]}"',
-                 f'    scheduled_at: "{sched}"',
-                 "    approved: true",
-                 "    body: |",
+        entry = [f"- id: {qid}",
+                 f'  title: "{title[:60]}"',
+                 f'  scheduled_at: "{sched}"',
+                 "  approved: true",
+                 "  body: |",
                  block(body)]
         if reply:
-            entry.append("    reply: |")
+            entry.append("  reply: |")
             entry.append(block(reply))
         new_blocks.append("\n".join(entry))
         synced.append(pid)
