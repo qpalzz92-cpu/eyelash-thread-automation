@@ -1,0 +1,48 @@
+name: Refresh Threads Tokens
+
+# Threads 장기 액세스 토큰(약 60일 만료)을 만료 전에 자동 연장한다.
+# 10일마다 실행 → refresh_access_token 으로 새 60일 토큰을 받아
+# GitHub 시크릿(THREADS_ACCESS_TOKEN / _BEALIZ)을 자동 업데이트.
+# 필요 시크릿: GH_PAT (이 저장소 Secrets 쓰기 권한이 있는 GitHub 토큰)
+
+on:
+  schedule:
+    - cron: "0 3 1,11,21 * *"   # 매월 1·11·21일 (10일 간격, 60일 만료 훨씬 전에 갱신)
+  workflow_dispatch:              # 수동 실행 버튼
+
+jobs:
+  refresh-roa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 로아 토큰 갱신
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          CUR: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          RESP=$(curl -s "https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=$CUR")
+          NEW=$(printf '%s' "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
+          if printf '%s' "$NEW" | grep -q '^TH'; then
+            printf '%s' "$NEW" | gh secret set THREADS_ACCESS_TOKEN --repo "${{ github.repository }}"
+            echo "로아 토큰 갱신 완료(새 60일 토큰 저장)"
+          else
+            echo "로아 토큰 갱신 실패. 응답: $RESP"
+            exit 1
+          fi
+
+  refresh-bealiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 비올리즈 토큰 갱신
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          CUR: ${{ secrets.THREADS_ACCESS_TOKEN_BEALIZ }}
+        run: |
+          RESP=$(curl -s "https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=$CUR")
+          NEW=$(printf '%s' "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)
+          if printf '%s' "$NEW" | grep -q '^TH'; then
+            printf '%s' "$NEW" | gh secret set THREADS_ACCESS_TOKEN_BEALIZ --repo "${{ github.repository }}"
+            echo "비올리즈 토큰 갱신 완료(새 60일 토큰 저장)"
+          else
+            echo "비올리즈 토큰 갱신 실패. 응답: $RESP"
+            exit 1
+          fi
