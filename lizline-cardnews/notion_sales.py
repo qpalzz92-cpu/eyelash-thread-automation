@@ -300,8 +300,8 @@ def main():
         blocks = card_image_blocks(name) + blocks
         if title in existing:
             archive(existing[title])             # 기존 것 보관 후 최신으로 교체
-        # 캔바링크(깨짐)는 더 이상 넣지 않는다 — 이미지를 직접 임베드.
-        _, added = create_page(dbid, title, card_no, slug, blocks, None)
+        # 캔바링크 = 편집 가능한 Canva 디자인 view_url (canva_links.json).
+        _, added = create_page(dbid, title, card_no, slug, blocks, CANVA_LINKS.get(name))
         n += 1
         log(f"노션 발행: [{card_no}] {title}  (본문 {added}블록)")
     log(f"완료: {n}개 문서 노션에 발행.  DB: {DB_TITLE}")
