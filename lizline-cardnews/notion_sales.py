@@ -12,7 +12,7 @@
      (제목이 같은 기존 페이지는 보관처리 후 새로 생성 → 항상 최신)
   본문 마크다운(##, ex), - 목록, 문단)을 노션 블록으로 변환.
 """
-import os, sys, json, glob, pathlib, re
+import os, sys, json, glob, pathlib, re, subprocess
 import requests
 
 API = "https://api.notion.com/v1"
@@ -198,6 +198,37 @@ def archive(pid):
     requests.patch(f"{API}/pages/{pid}", headers=HEADERS, json={"archived": True}, timeout=30)
 
 
+def card_image_blocks(name):
+    """out/<name>/card_*.png 를 raw.githubusercontent 이미지 블록으로 변환해 반환.
+    (완성된 카드뉴스 이미지를 노션 페이지 맨 위에 바로 보이게 한다.)"""
+    ref = os.environ.get("GITHUB_SHA")
+    if not ref:
+        try:
+            ref = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                          cwd=str(ROOT)).decode().strip()
+        except Exception:
+            ref = "claude/eyelash-supplement-sales-content-pru1oc"
+    base = ("https://raw.githubusercontent.com/qpalzz92-cpu/"
+            f"eyelash-thread-automation/{ref}/lizline-cardnews/out/{name}")
+
+    def _num(f):
+        mm = re.search(r"card_(\d+)\.png$", f)
+        return int(mm.group(1)) if mm else 0
+
+    files = sorted((f for f in glob.glob(str(ROOT / "out" / name / "card_*.png"))
+                    if "_locked" not in os.path.basename(f)), key=_num)
+    if not files:
+        return []
+    out = [{"object": "block", "type": "heading_2",
+            "heading_2": {"rich_text": rt("카드뉴스 (완성본)")}}]
+    for f in files:
+        url = f"{base}/{os.path.basename(f)}"
+        out.append({"object": "block", "type": "image",
+                    "image": {"type": "external", "external": {"url": url}}})
+    out.append({"object": "block", "type": "divider", "divider": {}})
+    return out
+
+
 def create_page(dbid, title, card_no, slug, blocks, canva_url=None):
     props = {
         "제목": {"title": rt(title)},
@@ -265,9 +296,12 @@ def main():
         slug = m.group(2) if m else name
         title, blocks = md_to_blocks(open(f, encoding="utf-8").read())
         title = title or name
+        # 완성된 카드뉴스 이미지(8장)를 페이지 맨 위에 넣는다.
+        blocks = card_image_blocks(name) + blocks
         if title in existing:
             archive(existing[title])             # 기존 것 보관 후 최신으로 교체
-        _, added = create_page(dbid, title, card_no, slug, blocks, CANVA_LINKS.get(name))
+        # 캔바링크(깨짐)는 더 이상 넣지 않는다 — 이미지를 직접 임베드.
+        _, added = create_page(dbid, title, card_no, slug, blocks, None)
         n += 1
         log(f"노션 발행: [{card_no}] {title}  (본문 {added}블록)")
     log(f"완료: {n}개 문서 노션에 발행.  DB: {DB_TITLE}")
