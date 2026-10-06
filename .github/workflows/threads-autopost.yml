@@ -47,11 +47,13 @@ jobs:
 
       - name: 발행 후 정리(같은 주제 미승인 형제 자동 보관)
         if: ${{ github.event.inputs.dry_run != 'true' }}
+        continue-on-error: true    # 노션 정리 실패해도 발행 이력 저장을 막지 않음
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         run: python automation/notion.py cleanup
 
       - name: 발행 이력 저장(commit state.json)
+        if: always()               # 앞 단계가 실패해도 발행 이력은 반드시 저장(중복 발행 방지)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
